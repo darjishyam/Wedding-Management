@@ -1,11 +1,18 @@
 import { useRouter } from "expo-router";
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 
 const { width, height } = Dimensions.get("window");
 const ARCH_RADIUS = width * 0.6;
 
 export default function Screen3() {
   const router = useRouter();
+  const { completeOnboarding } = useOnboarding();
+
+  const handleComplete = async () => {
+    await completeOnboarding();
+    router.push("/login");
+  };
 
   return (
     <View style={styles.container}>
@@ -39,7 +46,7 @@ export default function Screen3() {
           <View style={styles.activeDot} />
         </View>
 
-        <TouchableOpacity style={styles.nextButton} onPress={() => router.push("/login")}>
+        <TouchableOpacity style={styles.nextButton} onPress={handleComplete}>
           <Text style={styles.nextArrow}>✔</Text>
         </TouchableOpacity>
       </View>

@@ -1,16 +1,23 @@
 import { useRouter } from "expo-router";
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 
 const { width, height } = Dimensions.get("window");
 const ARCH_RADIUS = width * 0.6;
 
 export default function Screen2() {
   const router = useRouter();
+  const { completeOnboarding } = useOnboarding();
+
+  const handleSkip = async () => {
+    await completeOnboarding();
+    router.push("/login");
+  };
 
   return (
     <View style={styles.container}>
 
-      <TouchableOpacity style={styles.skipContainer} onPress={() => router.push("/login")}>
+      <TouchableOpacity style={styles.skipContainer} onPress={handleSkip}>
         <Text style={styles.skipText}>Skip</Text>
       </TouchableOpacity>
 

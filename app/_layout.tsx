@@ -1,19 +1,20 @@
-import { Stack } from "expo-router";
-import { WeddingProvider } from "@/contexts/WeddingContext";
-import { ShagunProvider } from "@/contexts/ShagunContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { OnboardingProvider } from "@/contexts/OnboardingContext";
+import { ShagunProvider } from "@/contexts/ShagunContext";
+import { WeddingProvider } from "@/contexts/WeddingContext";
+import { Stack } from "expo-router";
 
 export default function RootLayout() {
   return (
-    <WeddingProvider>
-      <ShagunProvider>
-        <LanguageProvider>
-          <Stack 
-            screenOptions={{ headerShown: false }}
-            initialRouteName="(tabs)"
-          >
-        {/* Temporarily disabled onboarding for testing */}
-        {/* <Stack.Screen name="onboarding" /> */}
+    <OnboardingProvider>
+      <WeddingProvider>
+        <ShagunProvider>
+          <LanguageProvider>
+            <Stack 
+              screenOptions={{ headerShown: false }}
+              initialRouteName="index"
+            >
+            <Stack.Screen name="onboarding" />
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
         <Stack.Screen name="otp" />
@@ -30,8 +31,9 @@ export default function RootLayout() {
         {/* Tabs - Home page */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
-        </LanguageProvider>
-      </ShagunProvider>
-    </WeddingProvider>
+          </LanguageProvider>
+        </ShagunProvider>
+      </WeddingProvider>
+    </OnboardingProvider>
   );
 }
