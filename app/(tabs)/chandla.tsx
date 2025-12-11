@@ -72,96 +72,120 @@ export default function MyChandlaScreen() {
         <Text style={styles.headerTitle}>My Shagun</Text>
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search-outline" size={24} color="#000" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search"
-            placeholderTextColor="#999"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+      {shagunEntries.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIconContainer}>
+            {/* Decorative Elements */}
+            <View style={[styles.decorativeDot, { top: 30, left: 50 }]} />
+            <View style={[styles.decorativeDot, { top: 70, right: 60 }]} />
+            <View style={[styles.decorativeDot, { bottom: 50, left: 40 }]} />
+            <View style={[styles.decorativeDot, { bottom: 70, right: 50 }]} />
+
+            {/* Main Icon */}
+            <Ionicons name="book-outline" size={100} color="#E0E0E0" />
+          </View>
+          <Text style={styles.emptyTitle}>No Chandla Added</Text>
+          <Text style={styles.emptySubtext}>Add your chandla</Text>
+          <TouchableOpacity
+            style={styles.emptyButton}
+            onPress={() => router.push("/add-shagun")}
+          >
+            <Text style={styles.emptyButtonText}>Add Shagun</Text>
+          </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Sort Row */}
-      <View style={styles.sortRow}>
-        <Text style={styles.countText}>{filteredEntries.length} Shagun</Text>
-        <TouchableOpacity
-          style={styles.sortButton}
-          onPress={() => setShowSortModal(true)}
-        >
-          <Ionicons name="swap-vertical-outline" size={18} color="#000" />
-          <Text style={styles.sortButtonText}>Sort</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* List */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {filteredEntries.map((entry) => (
-          <View key={entry.id} style={styles.card}>
-            {/* Card Header */}
-            <View style={styles.cardHeader}>
-              <View style={styles.cardHeaderLeft}>
-                <View style={styles.iconCircle}>
-                  <Ionicons name="heart" size={16} color="#000" />
-                </View>
-                {/* Displaying Groom Weds Bride or just Bride Name based on entry data */}
-                <Text style={styles.cardTitle}>
-                  {entry.brideName} {entry.groomName ? `Weds ${entry.groomName}` : ""}
-                </Text>
-              </View>
-              <TouchableOpacity>
-                <Ionicons name="ellipsis-vertical" size={20} color="#000" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Stats Grid */}
-            <View style={styles.statsGrid}>
-              {/* Marriage Date */}
-              <View style={styles.statBox}>
-                <View style={styles.statLabelRow}>
-                  <Ionicons name="calendar-outline" size={16} color="#000" />
-                  <Text style={styles.statLabel}>Marriage Date</Text>
-                </View>
-                <Text style={styles.statValue}>{formatDate(entry.date)}</Text>
-              </View>
-
-              {/* Total Chandlo */}
-              <View style={styles.statBox}>
-                <View style={styles.statLabelRow}>
-                  <Ionicons name="cash-outline" size={16} color="#000" />
-                  <Text style={styles.statLabel}>Total Chandlo</Text>
-                </View>
-                <Text style={styles.statValue}>{entry.amount}</Text>
-              </View>
-            </View>
-
-            {/* Wishes Box */}
-            <View style={styles.wishesBox}>
-              <Text style={styles.wishesLabel}>Wishes</Text>
-              <Text style={styles.wishesValue}>{entry.wishes || "happy marriage life"}</Text>
+      ) : (
+        <>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Ionicons name="search-outline" size={24} color="#000" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search"
+                placeholderTextColor="#999"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
             </View>
           </View>
-        ))}
-      </ScrollView>
 
-      {/* Bottom Footer Area (for navigation spacing) */}
-      <View style={{ height: 80 }} />
+          {/* Sort Row */}
+          <View style={styles.sortRow}>
+            <Text style={styles.countText}>{filteredEntries.length} Shagun</Text>
+            <TouchableOpacity
+              style={styles.sortButton}
+              onPress={() => setShowSortModal(true)}
+            >
+              <Ionicons name="swap-vertical-outline" size={18} color="#000" />
+              <Text style={styles.sortButtonText}>Sort</Text>
+            </TouchableOpacity>
+          </View>
 
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push("/add-shagun")}
-      >
-        <Ionicons name="add" size={30} color="#FFF" />
-      </TouchableOpacity>
+          {/* List */}
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {filteredEntries.map((entry) => (
+              <View key={entry.id} style={styles.card}>
+                {/* Card Header */}
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardHeaderLeft}>
+                    <View style={styles.iconCircle}>
+                      <Ionicons name="heart" size={16} color="#000" />
+                    </View>
+                    <Text style={styles.cardTitle}>
+                      {entry.brideName} {entry.groomName ? `Weds ${entry.groomName}` : ""}
+                    </Text>
+                  </View>
+                  <TouchableOpacity>
+                    <Ionicons name="ellipsis-vertical" size={20} color="#000" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Stats Grid */}
+                <View style={styles.statsGrid}>
+                  {/* Marriage Date */}
+                  <View style={styles.statBox}>
+                    <View style={styles.statLabelRow}>
+                      <Ionicons name="calendar-outline" size={16} color="#000" />
+                      <Text style={styles.statLabel}>Marriage Date</Text>
+                    </View>
+                    <Text style={styles.statValue}>{formatDate(entry.date)}</Text>
+                  </View>
+
+                  {/* Total Chandlo */}
+                  <View style={styles.statBox}>
+                    <View style={styles.statLabelRow}>
+                      <Ionicons name="cash-outline" size={16} color="#000" />
+                      <Text style={styles.statLabel}>Total Chandlo</Text>
+                    </View>
+                    <Text style={styles.statValue}>{entry.amount}</Text>
+                  </View>
+                </View>
+
+                {/* Wishes Box */}
+                <View style={styles.wishesBox}>
+                  <Text style={styles.wishesLabel}>Wishes</Text>
+                  <Text style={styles.wishesValue}>{entry.wishes || "happy marriage life"}</Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+
+          {/* Bottom Footer Area (for navigation spacing) */}
+          <View style={{ height: 80 }} />
+
+          {/* Floating Action Button */}
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => router.push("/add-shagun")}
+          >
+            <Ionicons name="add" size={30} color="#FFF" />
+          </TouchableOpacity>
+        </>
+      )}
 
       {/* Sort Modal */}
       <Modal
@@ -509,5 +533,53 @@ const styles = StyleSheet.create({
         cursor: "pointer",
       },
     }),
+  },
+  // Empty State Styles
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 30,
+    marginTop: -40, // Visual adjustment
+  },
+  emptyIconContainer: {
+    width: 200,
+    height: 200,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    position: "relative",
+  },
+  decorativeDot: {
+    position: "absolute",
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#E0E0E0",
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#000",
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#888",
+    marginBottom: 30,
+  },
+  emptyButton: {
+    backgroundColor: "#000",
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+    width: "100%",
+    maxWidth: 250,
+    alignItems: "center",
+  },
+  emptyButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
