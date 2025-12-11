@@ -242,14 +242,19 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
+    justifyContent: Platform.OS === "web" ? "center" : "flex-end",
+    alignItems: Platform.OS === "web" ? "center" : undefined,
   },
   modalContent: {
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    borderBottomLeftRadius: Platform.OS === "web" ? 20 : 0,
+    borderBottomRightRadius: Platform.OS === "web" ? 20 : 0,
     paddingTop: 20,
     maxHeight: "80%",
+    width: Platform.OS === "web" ? "90%" : "100%",
+    maxWidth: Platform.OS === "web" ? 400 : undefined,
   },
   modalHeader: {
     flexDirection: "row",

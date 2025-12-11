@@ -314,7 +314,8 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: "flex-end",
+    justifyContent: Platform.OS === "web" ? "center" : "flex-end",
+    alignItems: Platform.OS === "web" ? "center" : undefined,
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -324,6 +325,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    borderBottomLeftRadius: Platform.OS === "web" ? 20 : 0,
+    borderBottomRightRadius: Platform.OS === "web" ? 20 : 0,
+    width: Platform.OS === "web" ? "90%" : "100%",
+    maxWidth: Platform.OS === "web" ? 400 : undefined,
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
   },
   modalHeader: {

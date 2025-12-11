@@ -98,7 +98,7 @@ function WeddingDashboard({ weddingData }: { weddingData: { groomName: string; b
         {/* Shagun Book Card */}
         <TouchableOpacity
           style={[styles.card, styles.shagunBookCard]}
-          onPress={() => router.push("/shagun-book")}
+          onPress={() => router.push("/(tabs)/chandla")}
           activeOpacity={0.9}
         >
           <View style={styles.cardHeader}>

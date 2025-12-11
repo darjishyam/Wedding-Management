@@ -155,6 +155,14 @@ export default function MyChandlaScreen() {
       {/* Bottom Footer Area (for navigation spacing) */}
       <View style={{ height: 80 }} />
 
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push("/add-shagun")}
+      >
+        <Ionicons name="add" size={30} color="#FFF" />
+      </TouchableOpacity>
+
       {/* Sort Modal */}
       <Modal
         visible={showSortModal}
@@ -384,7 +392,8 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: "flex-end",
+    justifyContent: Platform.OS === "web" ? "center" : "flex-end",
+    alignItems: Platform.OS === "web" ? "center" : undefined,
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -394,7 +403,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    borderBottomLeftRadius: Platform.OS === "web" ? 20 : 0,
+    borderBottomRightRadius: Platform.OS === "web" ? 20 : 0,
     maxHeight: "80%",
+    width: Platform.OS === "web" ? "90%" : "100%",
+    maxWidth: Platform.OS === "web" ? 400 : undefined,
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
   },
   modalHeader: {
@@ -470,5 +483,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#FFFFFF",
+  },
+  fab: {
+    position: "absolute",
+    bottom: Platform.OS === "ios" ? 110 : 90, // Above tab bar
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4.65,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.3)",
+        cursor: "pointer",
+      },
+    }),
   },
 });
