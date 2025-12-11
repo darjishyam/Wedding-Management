@@ -147,9 +147,7 @@ export default function OnboardingScreen() {
         </View>
 
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-          <Text style={styles.nextArrow}>
-            {currentIndex === DATA.length - 1 ? "✔" : "→"}
-          </Text>
+          <Text style={styles.nextArrow}>→</Text>
         </TouchableOpacity>
       </View>
     </View>

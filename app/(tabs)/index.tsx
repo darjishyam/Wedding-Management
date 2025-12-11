@@ -1,7 +1,7 @@
 import { useWedding } from "@/contexts/WeddingContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Dimensions, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -13,30 +13,33 @@ export default function MyWeddingScreen() {
   if (!hasWedding || !weddingData) {
     return (
       <View style={styles.emptyContainer}>
-        {/* App Title */}
+        {/* App Title - stays at top */}
         <Text style={styles.title}>Shagun</Text>
 
-        {/* Illustration */}
-        <Image
-          source={require("../../assets/images/screen4.png")}
-          style={styles.illustration}
-        />
+        {/* Centered Content Wrapper */}
+        <View style={styles.emptyContentWrapper}>
+          {/* Illustration */}
+          <Image
+            source={require("../../assets/images/screen4.png")}
+            style={styles.illustration}
+          />
 
-        {/* Heading */}
-        <Text style={styles.heading}>No Wedding Created</Text>
+          {/* Heading */}
+          <Text style={styles.heading}>No Wedding Created</Text>
 
-        {/* Subtext */}
-        <Text style={styles.subtext}>
-          Let's Start Your Wedding Planing Now
-        </Text>
+          {/* Subtext */}
+          <Text style={styles.subtext}>
+            Let's Start Your Wedding Planing Now
+          </Text>
 
-        {/* Button */}
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push("/create-wedding")}
-        >
-          <Text style={styles.buttonText}>Create Wedding</Text>
-        </TouchableOpacity>
+          {/* Button */}
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.push("/create-wedding")}
+          >
+            <Text style={styles.buttonText}>Create Wedding</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -185,9 +188,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 60, // Push title down from safe area
+  },
+  emptyContentWrapper: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
-    paddingBottom: Platform.OS === "ios" ? 110 : 100,
+    marginBottom: 60, // Balance the visual center against the title
   },
   title: {
     fontSize: 28,

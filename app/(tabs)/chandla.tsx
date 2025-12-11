@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 30,
-    marginTop: -40, // Visual adjustment
+    // Removed marginTop: -40 to ensure true centering
   },
   emptyIconContainer: {
     width: 200,
