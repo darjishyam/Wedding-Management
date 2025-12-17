@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, ReactNode, useContext, useState } from "react";
 
 type Language = "English" | "Gujrati";
 
@@ -26,7 +26,35 @@ const translations = {
     "save": "Save",
     "english": "English",
     "gujrati": "Gujrati",
-    
+
+    // Dashboard
+    "shagun": "Shagun",
+    "no_wedding_created": "No Wedding Created",
+    "start_planning": "Let's Start Your Wedding Planing Now",
+    "create_wedding": "Create Wedding",
+    "shagun_book": "Shagun Book",
+    "expense": "Expense",
+    "invitation": "Invitation",
+    "people": "People",
+    "total_chandlo": "Total Chandlo",
+    "remaining": "Remaining",
+    "spent": "Spent",
+    "invitation_sent": "Invitation Sent",
+    "total_guest": "Total Guest",
+    "total_budget": "Total Budget",
+    "budget_required": "Budget Required",
+    "set_budget_msg": "Please set a total budget before managing expenses.",
+    "set_budget": "Set Budget",
+    "save_budget": "Save Budget",
+    "enter_budget_amount": "Enter Budget Amount",
+
+    // Shagun Book
+    "search_placeholder": "Search Name...",
+    "filter_amount": "Filter by Amount",
+    "add_shagun": "Add Shagun",
+    "no_shagun_added": "No Shagun Added",
+    "add_first_shagun": "Add your first Shagun entry",
+
     // Premium
     "upgrade_premium": "Upgrade to Premium",
     "unlock_features": "Unlock all premium features and enjoy an ad-free experience with PDF export capabilities.",
@@ -56,7 +84,35 @@ const translations = {
     "save": "સાચવો",
     "english": "ઇંગ્લિશ",
     "gujrati": "ગુજરાતી",
-    
+
+    // Dashboard
+    "shagun": "શગુન",
+    "no_wedding_created": "કોઈ લગ્ન બનાવેલ નથી",
+    "start_planning": "ચાલો હવે તમારા લગ્નનું આયોજન શરૂ કરીએ",
+    "create_wedding": "લગ્ન બનાવો",
+    "shagun_book": "શગુન બુક",
+    "expense": "ખર્ચ",
+    "invitation": "આમંત્રણ",
+    "people": "લોકો",
+    "total_chandlo": "કુલ ચાંદલો",
+    "remaining": "બાકી",
+    "spent": "ખર્ચાયેલ",
+    "invitation_sent": "આમંત્રણ મોકલ્યું",
+    "total_guest": "કુલ મહેમાન",
+    "total_budget": "કુલ બજેટ",
+    "budget_required": "બજેટ જરૂરી છે",
+    "set_budget_msg": "ખર્ચનું સંચાલન કરતા પહેલા કૃપા કરીને કુલ બજેટ સેટ કરો.",
+    "set_budget": "બજેટ સેટ કરો",
+    "save_budget": "બજેટ સાચવો",
+    "enter_budget_amount": "બજેટ રકમ દાખલ કરો",
+
+    // Shagun Book
+    "search_placeholder": "નામ શોધો...",
+    "filter_amount": "રકમ દ્વારા ફિલ્ટર કરો",
+    "add_shagun": "શગુન ઉમેરો",
+    "no_shagun_added": "કોઈ શગુન ઉમેર્યું નથી",
+    "add_first_shagun": "તમારું પ્રથમ શગુન એન્ટ્રી ઉમેરો",
+
     // Premium
     "upgrade_premium": "પ્રીમિયમમાં અપગ્રેડ કરો",
     "unlock_features": "બધી પ્રીમિયમ સુવિધાઓ અનલૉક કરો અને PDF એક્સપોર્ટ ક્ષમતાઓ સાથે વિજ્ઞાપન-મુક્ત અનુભવ માણો.",

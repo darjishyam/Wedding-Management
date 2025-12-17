@@ -1,5 +1,6 @@
 import { RangeSlider } from "@/components/RangeSlider";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useShagun } from "@/contexts/ShagunContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -11,6 +12,7 @@ export default function MyChandlaScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { shagunEntries } = useShagun();
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSortModal, setShowSortModal] = useState(false);
   const [sortName, setSortName] = useState("");
@@ -69,7 +71,7 @@ export default function MyChandlaScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Shagun</Text>
+        <Text style={styles.headerTitle}>{t("shagun")}</Text>
       </View>
 
       {shagunEntries.length === 0 ? (
@@ -84,8 +86,8 @@ export default function MyChandlaScreen() {
             {/* Main Icon */}
             <Ionicons name="book-outline" size={100} color="#E0E0E0" />
           </View>
-          <Text style={styles.emptyTitle}>No Chandla Added</Text>
-          <Text style={styles.emptySubtext}>Add your chandla</Text>
+          <Text style={styles.emptyTitle}>{t("no_shagun_added")}</Text>
+          <Text style={styles.emptySubtext}>{t("add_first_shagun")}</Text>
           <TouchableOpacity
             style={styles.emptyButton}
             onPress={() => {
@@ -103,7 +105,7 @@ export default function MyChandlaScreen() {
               router.push("/add-shagun");
             }}
           >
-            <Text style={styles.emptyButtonText}>Add Shagun</Text>
+            <Text style={styles.emptyButtonText}>{t("add_shagun")}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -114,7 +116,7 @@ export default function MyChandlaScreen() {
               <Ionicons name="search-outline" size={24} color="#000" style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search"
+                placeholder={t("search_placeholder")}
                 placeholderTextColor="#999"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -124,7 +126,7 @@ export default function MyChandlaScreen() {
 
           {/* Sort Row */}
           <View style={styles.sortRow}>
-            <Text style={styles.countText}>{filteredEntries.length} Shagun</Text>
+            <Text style={styles.countText}>{filteredEntries.length} {t("shagun")}</Text>
             <TouchableOpacity
               style={styles.sortButton}
               onPress={() => setShowSortModal(true)}
@@ -172,7 +174,7 @@ export default function MyChandlaScreen() {
                   <View style={styles.statBox}>
                     <View style={styles.statLabelRow}>
                       <Ionicons name="cash-outline" size={16} color="#000" />
-                      <Text style={styles.statLabel}>Total Chandlo</Text>
+                      <Text style={styles.statLabel}>{t("total_chandlo")}</Text>
                     </View>
                     <Text style={styles.statValue}>{entry.amount}</Text>
                   </View>
@@ -247,7 +249,7 @@ export default function MyChandlaScreen() {
               </View>
 
               <View style={styles.sortOption}>
-                <Text style={styles.sortOptionLabel}>Shagun</Text>
+                <Text style={styles.sortOptionLabel}>{t("shagun")}</Text>
                 <RangeSlider
                   min={0}
                   max={10000}

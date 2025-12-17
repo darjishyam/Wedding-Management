@@ -1,5 +1,4 @@
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 // TODO: User must replace this with their actual Web Client ID from Firebase Console
 const WEB_CLIENT_ID = 'PLACEHOLDER_WEB_CLIENT_ID_FROM_FIREBASE_CONSOLE';
@@ -29,13 +28,20 @@ class AuthService {
     }
 
     configureGoogleSignIn() {
-        GoogleSignin.configure({
-            webClientId: WEB_CLIENT_ID,
-        });
+        try {
+            const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+            GoogleSignin.configure({
+                webClientId: WEB_CLIENT_ID,
+            });
+        } catch (error) {
+            console.warn("GoogleSignin not available (likely running in Expo Go)");
+        }
     }
 
     async signInWithGoogle() {
         try {
+            const { GoogleSignin, statusCodes } = require('@react-native-google-signin/google-signin');
+
             // Check if your device supports Google Play
             await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
@@ -55,15 +61,16 @@ class AuthService {
 
             return user;
         } catch (error: any) {
-            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+            const { statusCodes } = require('@react-native-google-signin/google-signin') || {};
+            if (statusCodes && error.code === statusCodes.SIGN_IN_CANCELLED) {
                 // user cancelled the login flow
                 console.log('Google Sign-In Cancelled');
                 return null;
-            } else if (error.code === statusCodes.IN_PROGRESS) {
+            } else if (statusCodes && error.code === statusCodes.IN_PROGRESS) {
                 // operation (e.g. sign in) is in progress already
                 console.log('Google Sign-In In Progress');
                 throw error;
-            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+            } else if (statusCodes && error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
                 // play services not available or outdated
                 console.log('Play Services Not Available');
                 throw error;

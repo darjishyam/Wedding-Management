@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useExpense } from "@/contexts/ExpenseContext";
 import { useGuest } from "@/contexts/GuestContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useShagun } from "@/contexts/ShagunContext";
 import { useWedding } from "@/contexts/WeddingContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,13 +17,14 @@ export default function MyWeddingScreen() {
   const { user } = useAuth();
   const { hasWedding, weddingData, weddings, switchWedding, createWedding } = useWedding();
   const [showSwitchModal, setShowSwitchModal] = useState(false);
+  const { t } = useLanguage();
   // removed useGuest from here
 
   if (!hasWedding || !weddingData) {
     return (
       <View style={styles.emptyContainer}>
         {/* App Title - stays at top */}
-        <Text style={styles.title}>Shagun</Text>
+        <Text style={styles.title}>{t("shagun")}</Text>
 
         {/* Centered Content Wrapper */}
         <View style={styles.emptyContentWrapper}>
@@ -33,11 +35,11 @@ export default function MyWeddingScreen() {
           />
 
           {/* Heading */}
-          <Text style={styles.heading}>No Wedding Created</Text>
+          <Text style={styles.heading}>{t("no_wedding_created")}</Text>
 
           {/* Subtext */}
           <Text style={styles.subtext}>
-            Let's Start Your Wedding Planing Now
+            {t("start_planning")}
           </Text>
 
           {/* Button */}
@@ -65,7 +67,7 @@ export default function MyWeddingScreen() {
               router.push("/create-wedding");
             }}
           >
-            <Text style={styles.buttonText}>Create Wedding</Text>
+            <Text style={styles.buttonText}>{t("create_wedding")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -139,7 +141,7 @@ export default function MyWeddingScreen() {
                 <View style={styles.createNewIcon}>
                   <Ionicons name="add" size={20} color="#FFF" />
                 </View>
-                <Text style={styles.createNewText}>Create New Wedding</Text>
+                <Text style={styles.createNewText}>{t("create_wedding")}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -157,6 +159,7 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
   const { totalAmount } = useExpense();
   const { updateBudget } = useWedding();
   const { shagunEntries } = useShagun();
+  const { t } = useLanguage();
 
   const totalChandlo = shagunEntries.reduce((sum, entry) => {
     const val = parseInt(entry.amount.replace(/[₹,\s]/g, "")) || 0;
@@ -190,7 +193,7 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
     <SafeAreaView style={styles.dashboardContainer}>
       {/* Header Area */}
       <View style={styles.headerArea}>
-        <Text style={styles.headerTitle}>Shagun</Text>
+        <Text style={styles.headerTitle}>{t("shagun")}</Text>
 
         {/* Names Row */}
         <View style={styles.namesRowHeader}>
@@ -239,17 +242,17 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
             <View style={styles.iconCircle}>
               <Ionicons name="book" size={18} color="#000" />
             </View>
-            <Text style={styles.cardTitle}>Shagun Book</Text>
+            <Text style={styles.cardTitle}>{t("shagun_book")}</Text>
           </View>
           <View style={styles.cardInternalRow}>
             <View style={[styles.statBox, styles.shagunStatBox]}>
               <Ionicons name="person" size={24} color="#000" style={styles.statIcon} />
-              <Text style={styles.statLabel}>People</Text>
+              <Text style={styles.statLabel}>{t("people")}</Text>
               <Text style={styles.statValue}>{shagunEntries.length}</Text>
             </View>
             <View style={[styles.statBox, styles.shagunStatBox]}>
               <Ionicons name="cash" size={24} color="#000" style={styles.statIcon} />
-              <Text style={styles.statLabel}>Total Chandlo</Text>
+              <Text style={styles.statLabel}>{t("total_chandlo")}</Text>
               <Text style={styles.statValue}>₹ {totalChandlo.toLocaleString()}</Text>
             </View>
           </View>
@@ -263,12 +266,12 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
               router.push("/expenses");
             } else {
               Alert.alert(
-                "Budget Required",
-                "Please set a total budget before managing expenses.",
+                t("budget_required"),
+                t("set_budget_msg"),
                 [
-                  { text: "Cancel", style: "cancel" },
+                  { text: t("cancel"), style: "cancel" },
                   {
-                    text: "Set Budget", onPress: () => {
+                    text: t("set_budget"), onPress: () => {
                       setBudgetInput("0");
                       setShowBudgetModal(true);
                     }
@@ -283,7 +286,7 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
             <View style={styles.iconCircle}>
               <Ionicons name="wallet" size={18} color="#000" />
             </View>
-            <Text style={styles.cardTitle}>Expense</Text>
+            <Text style={styles.cardTitle}>{t("expense")}</Text>
             {/* Edit Budget Icon */}
             <TouchableOpacity onPress={() => { setBudgetInput(totalBudget.toString()); setShowBudgetModal(true); }} style={{ marginLeft: 'auto', padding: 4 }}>
               <Ionicons name="pencil" size={18} color="#000" />
@@ -292,12 +295,12 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
           <View style={styles.cardInternalRow}>
             <View style={[styles.statBox, styles.expenseStatBox]}>
               <Ionicons name="cash-outline" size={20} color="#000" style={styles.statIcon} />
-              <Text style={styles.statLabel}>Remaining</Text>
+              <Text style={styles.statLabel}>{t("remaining")}</Text>
               <Text style={styles.statValue}>₹ {remainingBudget.toLocaleString()}</Text>
             </View>
             <View style={[styles.statBox, styles.expenseStatBox]}>
-              <Image source={require("../../assets/images/money-send.png")} style={{ width: 48, height: 48, marginBottom: 8, resizeMode: "contain", tintColor: "#000" }} />
-              <Text style={styles.statLabel}>Spent</Text>
+              <Image source={require("../../assets/images/money-send.png")} style={{ width: 36, height: 36, marginBottom: 4, resizeMode: "contain", tintColor: "#000" }} />
+              <Text style={styles.statLabel}>{t("spent")}</Text>
               <Text style={styles.statValue}>₹ {totalSpent.toLocaleString()}</Text>
             </View>
           </View>
@@ -313,17 +316,17 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
             <View style={styles.iconCircle}>
               <Ionicons name="paper-plane" size={18} color="#000" />
             </View>
-            <Text style={styles.cardTitle}>Invitation</Text>
+            <Text style={styles.cardTitle}>{t("invitation")}</Text>
           </View>
           <View style={styles.cardInternalRow}>
             <View style={[styles.statBox, styles.invitationStatBox]}>
-              <Image source={require("../../assets/images/direct-send.png")} style={{ width: 48, height: 48, marginBottom: 8, resizeMode: "contain", tintColor: "#000" }} />
-              <Text style={styles.statLabel}>Invitation Sent</Text>
+              <Image source={require("../../assets/images/direct-send.png")} style={{ width: 36, height: 36, marginBottom: 4, resizeMode: "contain", tintColor: "#000" }} />
+              <Text style={styles.statLabel}>{t("invitation_sent")}</Text>
               <Text style={styles.statValue}>{guests.length}</Text>
             </View>
             <View style={[styles.statBox, styles.invitationStatBox]}>
-              <Image source={require("../../assets/images/empty_guest.png")} style={{ width: 48, height: 48, marginBottom: 8, resizeMode: "contain", tintColor: "#000" }} />
-              <Text style={styles.statLabel}>Total Guest</Text>
+              <Image source={require("../../assets/images/empty_guest.png")} style={{ width: 36, height: 36, marginBottom: 4, resizeMode: "contain", tintColor: "#000" }} />
+              <Text style={styles.statLabel}>{t("total_guest")}</Text>
               <Text style={styles.statValue}>{guests.reduce((sum, guest) => sum + (guest.familyCount || 1), 0)}</Text>
             </View>
           </View>
@@ -339,7 +342,7 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { padding: 20 }]}>
-            <Text style={[styles.modalTitle, { marginBottom: 15 }]}>Set Total Budget</Text>
+            <Text style={[styles.modalTitle, { marginBottom: 15 }]}>{t("set_budget")}</Text>
             <TextInput
               value={budgetInput}
               onChangeText={setBudgetInput}
@@ -348,19 +351,19 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
                 borderWidth: 1, borderColor: '#DDD', borderRadius: 8,
                 padding: 12, fontSize: 18, marginBottom: 20
               }}
-              placeholder="Enter Budget Amount"
+              placeholder={t("enter_budget_amount")}
             />
             <TouchableOpacity
               onPress={handleSaveBudget}
               style={{ backgroundColor: '#000', padding: 15, borderRadius: 10, alignItems: 'center' }}
             >
-              <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Save Budget</Text>
+              <Text style={{ color: '#FFF', fontWeight: 'bold' }}>{t("save_budget")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setShowBudgetModal(false)}
               style={{ marginTop: 15, alignItems: 'center' }}
             >
-              <Text style={{ color: '#666' }}>Cancel</Text>
+              <Text style={{ color: '#666' }}>{t("cancel")}</Text>
             </TouchableOpacity>
           </View>
         </View>

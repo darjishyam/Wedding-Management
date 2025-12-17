@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useExpense } from "@/contexts/ExpenseContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -9,6 +10,7 @@ export default function ExpenseListScreen() {
     const router = useRouter();
     const { user } = useAuth();
     const { expenses, isLoading } = useExpense();
+    const { t } = useLanguage();
 
     const handleAddExpense = () => {
         if (!user) {
@@ -36,7 +38,7 @@ export default function ExpenseListScreen() {
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                         <Ionicons name="arrow-back" size={24} color="#000" />
                     </TouchableOpacity>
-                    <Text style={styles.navTitle}>Expenses</Text>
+                    <Text style={styles.navTitle}>{t("expense")}</Text>
                     <View style={styles.placeholder} />
                 </View>
                 <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -62,7 +64,7 @@ export default function ExpenseListScreen() {
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
-                <Text style={styles.navTitle}>Expenses ({expenses.length})</Text>
+                <Text style={styles.navTitle}>{t("expense")} ({expenses.length})</Text>
                 <TouchableOpacity style={styles.addButtonSmall} onPress={handleAddExpense}>
                     <Ionicons name="add" size={24} color="#000" />
                 </TouchableOpacity>

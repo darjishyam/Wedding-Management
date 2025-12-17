@@ -18,7 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CreateWeddingScreen() {
   const router = useRouter();
-  const { setWeddingData } = useWedding();
+  const { createWedding } = useWedding();
   const [groomName, setGroomName] = useState("");
   const [brideName, setBrideName] = useState("");
   const [marriageDate, setMarriageDate] = useState(new Date());
@@ -46,7 +46,7 @@ export default function CreateWeddingScreen() {
     if (groomName.trim() && brideName.trim()) {
       setIsSaving(true);
       try {
-        await setWeddingData({
+        await createWedding({
           groomName: groomName.trim(),
           brideName: brideName.trim(),
           date: marriageDate,

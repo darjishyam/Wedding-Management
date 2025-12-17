@@ -13,7 +13,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -198,7 +198,8 @@ export default function SignUpScreen() {
           </TouchableOpacity>
 
           {/* Google */}
-          <TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin}>
+          {/* Google */}
+          <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert("Coming Soon", "Google Sign-In will be available soon!")}>
             <RNImage
               source={require("../assets/images/Google.png")}
               style={{ width: 22, height: 22, marginRight: 10, resizeMode: 'contain' }}
