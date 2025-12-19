@@ -47,10 +47,10 @@ export default function ExpenseListScreen() {
                         <View style={styles.iconContainer}>
                             <Image source={require('@/assets/images/dollar-circle.png')} style={{ width: 120, height: 120 }} resizeMode="contain" />
                         </View>
-                        <Text style={styles.primaryText}>No Expenses Added</Text>
-                        <Text style={styles.secondaryText}>Track your wedding spending here.</Text>
+                        <Text style={styles.primaryText}>{t("no_expenses_added")}</Text>
+                        <Text style={styles.secondaryText}>{t("track_spending")}</Text>
                         <TouchableOpacity style={styles.addButton} onPress={handleAddExpense}>
-                            <Text style={styles.addButtonText}>Add New Expense</Text>
+                            <Text style={styles.addButtonText}>{t("add_new_expense")}</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>

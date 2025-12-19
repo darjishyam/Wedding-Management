@@ -1,4 +1,5 @@
 import { useExpense } from "@/contexts/ExpenseContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -18,6 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function AddExpenseScreen() {
     const router = useRouter();
     const { addExpense } = useExpense();
+    const { t } = useLanguage();
     const [title, setTitle] = useState("");
     const [amount, setAmount] = useState("");
     const [paidAmount, setPaidAmount] = useState("");
@@ -30,7 +32,7 @@ export default function AddExpenseScreen() {
 
     const handleSave = async (shouldGoBack: boolean) => {
         if (!title || !amount) {
-            Alert.alert("Error", "Please enter title and amount");
+            Alert.alert(t("error"), t("enter_title_amount"));
             return;
         }
 
@@ -38,19 +40,19 @@ export default function AddExpenseScreen() {
         const numPaid = parseFloat(paidAmount) || 0;
 
         if (isNaN(numAmount) || numAmount <= 0) {
-            Alert.alert("Error", "Please enter a valid amount");
+            Alert.alert(t("error"), t("enter_valid_amount"));
             return;
         }
 
         if (numPaid > numAmount) {
-            Alert.alert("Error", "Paid amount cannot be greater than total amount");
+            Alert.alert(t("error"), t("paid_amount_error"));
             return;
         }
 
         setLoading(true);
         try {
             await addExpense(title, numAmount, numPaid, "Other"); // Category hardcoded or we can add it back if needed, but design implies simplification
-            Alert.alert("Success", "Expense added successfully");
+            Alert.alert(t("success"), t("expense_added_success"));
             if (shouldGoBack) {
                 router.replace("/expenses");
             } else {
@@ -59,7 +61,7 @@ export default function AddExpenseScreen() {
                 setPaidAmount("");
             }
         } catch (error) {
-            Alert.alert("Error", "Failed to add expense");
+            Alert.alert(t("error"), t("failed_add_expense"));
         } finally {
             setLoading(false);
         }
@@ -75,7 +77,7 @@ export default function AddExpenseScreen() {
                 >
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
-                <Text style={styles.navTitle}>Add New Expense</Text>
+                <Text style={styles.navTitle}>{t("add_new_expense")}</Text>
                 <View style={styles.placeholder} />
             </View>
 
@@ -91,7 +93,7 @@ export default function AddExpenseScreen() {
 
                         {/* Expense For */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Expense For</Text>
+                            <Text style={styles.inputLabel}>{t("expense_for")}</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder=""
@@ -102,7 +104,7 @@ export default function AddExpenseScreen() {
 
                         {/* Total Amount */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Total Amount</Text>
+                            <Text style={styles.inputLabel}>{t("total_amount")}</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="₹ 0"
@@ -114,7 +116,7 @@ export default function AddExpenseScreen() {
 
                         {/* Paid Deposit Amount */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Paid Deposit Amount</Text>
+                            <Text style={styles.inputLabel}>{t("paid_deposit_amount")}</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="₹ 0"
@@ -126,7 +128,7 @@ export default function AddExpenseScreen() {
 
                         {/* Pending Amount */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Pending Amount</Text>
+                            <Text style={styles.inputLabel}>{t("pending_amount")}</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="₹ 0"
@@ -146,7 +148,7 @@ export default function AddExpenseScreen() {
                     onPress={() => handleSave(false)}
                     disabled={loading}
                 >
-                    <Text style={styles.saveMoreButtonText}>Save And Add Another</Text>
+                    <Text style={styles.saveMoreButtonText}>{t("save_and_add_another")}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -154,7 +156,7 @@ export default function AddExpenseScreen() {
                     onPress={() => handleSave(true)}
                     disabled={loading}
                 >
-                    <Text style={styles.saveButtonText}>{loading ? "Saving..." : "Save"}</Text>
+                    <Text style={styles.saveButtonText}>{loading ? "Saving..." : t("save")}</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

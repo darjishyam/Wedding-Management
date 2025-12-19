@@ -16,9 +16,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 export default function CreateWeddingScreen() {
   const router = useRouter();
   const { createWedding } = useWedding();
+  const { t } = useLanguage();
   const [groomName, setGroomName] = useState("");
   const [brideName, setBrideName] = useState("");
   const [marriageDate, setMarriageDate] = useState(new Date());
@@ -56,7 +59,7 @@ export default function CreateWeddingScreen() {
       } catch (error: any) {
         console.error("Create wedding error full object:", error);
         const errorMessage = error.response?.data?.message || error.message || "Unknown error";
-        alert(`Failed to create wedding: ${errorMessage}`);
+        alert(`${t("failed_create_wedding")}: ${errorMessage}`);
       } finally {
         setIsSaving(false);
       }
@@ -75,7 +78,7 @@ export default function CreateWeddingScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add New Wedding</Text>
+          <Text style={styles.headerTitle}>{t("add_new_wedding")}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -87,7 +90,7 @@ export default function CreateWeddingScreen() {
         >
           {/* Groom's Name */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Groom's Name</Text>
+            <Text style={styles.label}>{t("groom_name")}</Text>
             <TextInput
               style={styles.input}
               placeholder="Mirror"
@@ -99,7 +102,7 @@ export default function CreateWeddingScreen() {
 
           {/* Bride's Name */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Bride's Name</Text>
+            <Text style={styles.label}>{t("bride_name")}</Text>
             <TextInput
               style={styles.input}
               placeholder="Moon"
@@ -111,7 +114,7 @@ export default function CreateWeddingScreen() {
 
           {/* Marriage Date */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Marriage Date</Text>
+            <Text style={styles.label}>{t("marriage_date")}</Text>
             <TouchableOpacity
               style={styles.dateInputContainer}
               onPress={handleDatePress}
@@ -131,7 +134,7 @@ export default function CreateWeddingScreen() {
             onPress={handleSave}
             disabled={isSaving}
           >
-            <Text style={styles.saveButtonText}>{isSaving ? "Saving..." : "Save"}</Text>
+            <Text style={styles.saveButtonText}>{isSaving ? t("saving") : t("save")}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -146,7 +149,7 @@ export default function CreateWeddingScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Date</Text>
+              <Text style={styles.modalTitle}>{t("select_date")}</Text>
               <TouchableOpacity onPress={() => setShowDatePicker(false)}>
                 <Ionicons name="close" size={24} color="#000" />
               </TouchableOpacity>

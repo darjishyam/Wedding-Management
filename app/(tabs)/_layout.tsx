@@ -1,8 +1,10 @@
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { Platform, Image as RNImage } from "react-native";
 
 export default function TabLayout() {
+  const { t } = useLanguage();
   return (
     <Tabs
       screenOptions={{
@@ -31,7 +33,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "My Wedding",
+          title: t("my_wedding"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="heart" size={24} color={color} />
           ),
@@ -41,7 +43,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="chandla"
         options={{
-          title: "My Shagun",
+          title: t("my_shagun"),
           tabBarIcon: ({ color }) => (
             <RNImage
               source={require("@/assets/images/wallet.png")}
@@ -55,7 +57,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
+          title: t("profile"),
           tabBarIcon: ({ color }) => (
             <Ionicons name="person" size={24} color={color} />
           ),

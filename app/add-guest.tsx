@@ -1,5 +1,6 @@
 
 import { useGuest } from "@/contexts/GuestContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -9,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function AddGuestScreen() {
   const router = useRouter();
   const { addGuest } = useGuest();
+  const { t } = useLanguage();
 
   const [name, setName] = useState("");
   const [totalFamilyCount, setTotalFamilyCount] = useState("");
@@ -23,14 +25,14 @@ export default function AddGuestScreen() {
 
   const handleSaveCommon = async (shouldGoBack: boolean) => {
     if (!name.trim() || !totalFamilyCount.trim() || !cityVillage.trim()) {
-      Alert.alert("Error", "Please fill all fields");
+      Alert.alert(t("error"), t("all_fields_mandatory"));
       return;
     }
 
     setLoading(true);
     try {
       await addGuest(name, parseInt(totalFamilyCount), cityVillage);
-      Alert.alert("Success", "Guest added successfully");
+      Alert.alert(t("success"), t("guest_added_success"));
       if (shouldGoBack) {
         // Redirect to Home Page as requested
         router.navigate("/(tabs)");
@@ -38,7 +40,7 @@ export default function AddGuestScreen() {
         resetForm();
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to add guest");
+      Alert.alert(t("error"), t("failed_add_guest"));
     } finally {
       setLoading(false);
 
@@ -63,7 +65,7 @@ export default function AddGuestScreen() {
           >
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.navTitle}>Add New Guest</Text>
+          <Text style={styles.navTitle}>{t("add_new_guest")}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -76,7 +78,7 @@ export default function AddGuestScreen() {
         >
           {/* Name Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Name</Text>
+            <Text style={styles.label}>{t("name")}</Text>
             <TextInput
               style={styles.input}
               value={name}
@@ -88,7 +90,7 @@ export default function AddGuestScreen() {
 
           {/* Total family Count Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Total family Count</Text>
+            <Text style={styles.label}>{t("total_family_count")}</Text>
             <TextInput
               style={styles.input}
               value={totalFamilyCount}
@@ -101,7 +103,7 @@ export default function AddGuestScreen() {
 
           {/* City/Village Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>City/Village</Text>
+            <Text style={styles.label}>{t("city_village")}</Text>
             <TextInput
               style={styles.input}
               value={cityVillage}
@@ -119,7 +121,7 @@ export default function AddGuestScreen() {
             onPress={handleSaveAndAddAnother}
             disabled={loading}
           >
-            <Text style={styles.saveAndAddButtonText}>Save And Add Another</Text>
+            <Text style={styles.saveAndAddButtonText}>{t("save_and_add_another")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -127,7 +129,7 @@ export default function AddGuestScreen() {
             onPress={handleSave}
             disabled={loading}
           >
-            <Text style={styles.saveButtonText}>{loading ? "Saving..." : "Save"}</Text>
+            <Text style={styles.saveButtonText}>{loading ? "Saving..." : t("save")}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

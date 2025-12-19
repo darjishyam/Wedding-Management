@@ -3,8 +3,11 @@ import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 export default function TermsOfServiceScreen() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -16,7 +19,7 @@ export default function TermsOfServiceScreen() {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Terms of Service</Text>
+        <Text style={styles.navTitle}>{t("terms_of_service")}</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -26,54 +29,36 @@ export default function TermsOfServiceScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Last Updated */}
-        <Text style={styles.lastUpdated}>Last updated: January 1, 2025</Text>
+        <Text style={styles.lastUpdated}>{t("last_updated")}</Text>
 
         {/* Content */}
         <View style={styles.content}>
-          <Text style={styles.sectionTitle}>1. Acceptance of Terms</Text>
-          <Text style={styles.sectionText}>
-            By accessing and using the Shagun application, you accept and agree to be bound by the terms and provision of this agreement.
-          </Text>
+          <Text style={styles.sectionTitle}>{t("terms_1_title")}</Text>
+          <Text style={styles.sectionText}>{t("terms_1_text")}</Text>
 
-          <Text style={styles.sectionTitle}>2. Use License</Text>
-          <Text style={styles.sectionText}>
-            Permission is granted to temporarily use Shagun for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title.
-          </Text>
+          <Text style={styles.sectionTitle}>{t("terms_2_title")}</Text>
+          <Text style={styles.sectionText}>{t("terms_2_text")}</Text>
 
-          <Text style={styles.sectionTitle}>3. User Account</Text>
-          <Text style={styles.sectionText}>
-            You are responsible for maintaining the confidentiality of your account and password. You agree to accept responsibility for all activities that occur under your account.
-          </Text>
+          <Text style={styles.sectionTitle}>{t("terms_3_title")}</Text>
+          <Text style={styles.sectionText}>{t("terms_3_text")}</Text>
 
-          <Text style={styles.sectionTitle}>4. Premium Subscription</Text>
-          <Text style={styles.sectionText}>
-            Premium subscriptions are billed on a monthly basis and will automatically renew unless cancelled. You may cancel your subscription at any time through your account settings.
-          </Text>
+          <Text style={styles.sectionTitle}>{t("terms_4_title")}</Text>
+          <Text style={styles.sectionText}>{t("terms_4_text")}</Text>
 
-          <Text style={styles.sectionTitle}>5. Data Export</Text>
-          <Text style={styles.sectionText}>
-            Premium users can export their data to PDF format. The exported data is for personal use only and may not be redistributed or used for commercial purposes.
-          </Text>
+          <Text style={styles.sectionTitle}>{t("terms_5_title")}</Text>
+          <Text style={styles.sectionText}>{t("terms_5_text")}</Text>
 
-          <Text style={styles.sectionTitle}>6. Privacy</Text>
-          <Text style={styles.sectionText}>
-            Your use of Shagun is also governed by our Privacy Policy. Please review our Privacy Policy to understand our practices.
-          </Text>
+          <Text style={styles.sectionTitle}>{t("terms_6_title")}</Text>
+          <Text style={styles.sectionText}>{t("terms_6_text")}</Text>
 
-          <Text style={styles.sectionTitle}>7. Limitation of Liability</Text>
-          <Text style={styles.sectionText}>
-            In no event shall Shagun or its suppliers be liable for any damages arising out of the use or inability to use the materials on Shagun's application.
-          </Text>
+          <Text style={styles.sectionTitle}>{t("terms_7_title")}</Text>
+          <Text style={styles.sectionText}>{t("terms_7_text")}</Text>
 
-          <Text style={styles.sectionTitle}>8. Modifications</Text>
-          <Text style={styles.sectionText}>
-            Shagun may revise these terms of service at any time without notice. By using this application you are agreeing to be bound by the then current version of these terms of service.
-          </Text>
+          <Text style={styles.sectionTitle}>{t("terms_8_title")}</Text>
+          <Text style={styles.sectionText}>{t("terms_8_text")}</Text>
 
-          <Text style={styles.sectionTitle}>9. Contact Information</Text>
-          <Text style={styles.sectionText}>
-            If you have any questions about these Terms of Service, please contact us at support@shagun.com
-          </Text>
+          <Text style={styles.sectionTitle}>{t("terms_9_title")}</Text>
+          <Text style={styles.sectionText}>{t("terms_9_text")}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

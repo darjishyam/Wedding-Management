@@ -1,4 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -17,21 +19,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function LoginScreen() {
   const router = useRouter();
   const { login } = useAuth();
+  const { t } = useLanguage();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     // Basic Validation before API call
     if (!email || !password) {
-      Alert.alert("Error", "Please enter both email and password");
+      Alert.alert(t("error"), t("enter_email_password"));
       return;
     }
 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
-      Alert.alert("Invalid Email", "Please enter a valid email address");
+      Alert.alert(t("invalid_email"), t("invalid_email"));
       return;
     }
 
@@ -49,7 +53,7 @@ export default function LoginScreen() {
       if (!error.response) {
         Alert.alert("Connection Error", "Cannot reach the server. Please check your internet connection.");
       } else {
-        Alert.alert("Login Failed", error.response?.data?.message || "Invalid credentials");
+        Alert.alert(t("login_failed"), error.response?.data?.message || t("invalid_credentials"));
       }
       setLoading(false);
     }
@@ -82,13 +86,13 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.title}>Log In</Text>
-          <Text style={styles.subtitle}>Log in with Email and Password</Text>
+          <Text style={styles.title}>{t("log_in")}</Text>
+          <Text style={styles.subtitle}>{t("log_in_subtitle")}</Text>
 
-          <Text style={styles.label}>Email Address</Text>
+          <Text style={styles.label}>{t("email_address")}</Text>
           <TextInput
             placeholder="moon@gmail.com"
-            placeholderTextColor="#999"
+            placeholderTextColor="#666"
             style={styles.input}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -96,15 +100,21 @@ export default function LoginScreen() {
             onChangeText={setEmail}
           />
 
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            placeholder="********"
-            placeholderTextColor="#999"
-            style={styles.input}
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
+
+          <Text style={styles.label}>{t("password")}</Text>
+          <View style={styles.passwordContainer}>
+            <TextInput
+              placeholder="********"
+              placeholderTextColor="#666"
+              style={styles.passwordInput}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+              <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="gray" />
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             activeOpacity={0.7}
@@ -112,13 +122,13 @@ export default function LoginScreen() {
             onPress={handleLogin}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>{loading ? "Logging in..." : "Log In"}</Text>
+            <Text style={styles.buttonText}>{loading ? t("logging_in") : t("log_in")}</Text>
           </TouchableOpacity>
 
           <Text style={styles.bottomText}>
-            Don't have an account?{" "}
+            {t("dont_have_account")}{" "}
             <Text style={styles.link} onPress={() => router.push("/signup")}>
-              Sign Up
+              {t("sign_up")}
             </Text>
           </Text>
         </ScrollView>
@@ -178,6 +188,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 20,
     backgroundColor: "#F9F9F9",
+    color: "#000000",
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 55,
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    backgroundColor: "#F9F9F9",
+  },
+  passwordInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 16,
+    color: "#000000",
+  },
+  eyeIcon: {
+    padding: 8,
   },
   button: {
     backgroundColor: "#000",

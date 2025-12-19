@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { authService } from "@/services/authService";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -20,11 +21,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function SignUpScreen() {
   const router = useRouter();
   const { register } = useAuth();
+  const { t } = useLanguage();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Helper for cross-platform alerts
@@ -58,14 +61,14 @@ export default function SignUpScreen() {
 
   const handleSignup = async () => {
     if (!name || !email || !mobile || !password) {
-      showAlert("Error", "Please fill in all fields");
+      showAlert(t("error"), t("all_fields_mandatory"));
       return;
     }
 
     // Name Validation: Alphabets and spaces only
     const nameRegex = /^[a-zA-Z\s]+$/;
     if (!nameRegex.test(name)) {
-      showAlert("Invalid Name", "Name must contain only alphabets");
+      showAlert(t("invalid_name"), t("name_alphabets_only"));
       return;
     }
 
@@ -73,7 +76,7 @@ export default function SignUpScreen() {
     // Requires at least 2 characters for TLD (e.g., .com, .in, .co)
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
-      showAlert("Invalid Email", "Please enter a valid email address");
+      showAlert(t("invalid_email"), t("invalid_email"));
       return;
     }
 
@@ -86,7 +89,7 @@ export default function SignUpScreen() {
     // Mobile Validation: Exactly 10 digits
     const mobileRegex = /^\d{10}$/;
     if (!mobileRegex.test(mobile)) {
-      showAlert("Invalid Mobile", "Mobile number must be exactly 10 digits");
+      showAlert(t("invalid_mobile"), t("mobile_10_digits"));
       return;
     }
 
@@ -96,7 +99,7 @@ export default function SignUpScreen() {
     console.log("DEBUG: Validation checking password:", trimmedPassword, "length:", trimmedPassword.length, "result:", passwordRegex.test(trimmedPassword));
 
     if (!passwordRegex.test(trimmedPassword)) {
-      showAlert("Weak Password", "Password must be at least 8 characters long and include a letter, a number, and a special character.");
+      showAlert(t("weak_password"), t("password_requirements"));
       return;
     }
 
@@ -114,8 +117,8 @@ export default function SignUpScreen() {
 
     } catch (error: any) {
       console.error("Signup Error Details:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Something went wrong";
-      showAlert("Signup Failed", errorMessage);
+      const errorMessage = error.response?.data?.message || error.message || t("error");
+      showAlert(t("signup_failed"), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -139,21 +142,23 @@ export default function SignUpScreen() {
           </View>
 
           {/* Titles */}
-          <Text style={styles.title}>Create a New Account</Text>
-          <Text style={styles.subtitle}>Fill full all the details.</Text>
+          <Text style={styles.title}>{t("create_account")}</Text>
+          <Text style={styles.subtitle}>{t("fill_details")}</Text>
 
           {/* Inputs */}
-          <Text style={styles.label}>Name</Text>
+          <Text style={styles.label}>{t("name")}</Text>
           <TextInput
             placeholder="Moon"
+            placeholderTextColor="#666"
             style={styles.input}
             value={name}
             onChangeText={setName}
           />
 
-          <Text style={styles.label}>Email Address</Text>
+          <Text style={styles.label}>{t("email_address")}</Text>
           <TextInput
             placeholder="moon@gmail.com"
+            placeholderTextColor="#666"
             style={styles.input}
             value={email}
             onChangeText={setEmail}
@@ -161,23 +166,35 @@ export default function SignUpScreen() {
             keyboardType="email-address"
           />
 
-          <Text style={styles.label}>Phone Number</Text>
-          <TextInput
-            placeholder="9999999999"
-            style={styles.input}
-            keyboardType="phone-pad"
-            value={mobile}
-            onChangeText={setMobile}
-          />
+          <Text style={styles.label}>{t("phone_number")}</Text>
+          <View style={styles.phoneInputContainer}>
+            <Text style={styles.phonePrefix}>+91</Text>
+            <TextInput
+              placeholder="9999999999"
+              placeholderTextColor="#666"
+              style={styles.phoneInput}
+              keyboardType="phone-pad"
+              value={mobile}
+              onChangeText={setMobile}
+              maxLength={10}
+            />
+          </View>
 
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            placeholder="********"
-            style={styles.input}
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
+
+          <Text style={styles.label}>{t("password")}</Text>
+          <View style={styles.passwordContainer}>
+            <TextInput
+              placeholder="********"
+              placeholderTextColor="#666"
+              style={styles.passwordInput}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+              <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="gray" />
+            </TouchableOpacity>
+          </View>
 
           {/* Sign Up Button */}
           <TouchableOpacity
@@ -185,7 +202,7 @@ export default function SignUpScreen() {
             onPress={handleSignup}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>{loading ? "Signing Up..." : "Sign Up"}</Text>
+            <Text style={styles.buttonText}>{loading ? t("signing_up") : t("sign_up")}</Text>
           </TouchableOpacity>
 
           {/* Divider */}
@@ -194,7 +211,7 @@ export default function SignUpScreen() {
           {/* Apple */}
           <TouchableOpacity style={styles.socialButton}>
             <Ionicons name="logo-apple" size={22} color="black" style={{ marginRight: 10 }} />
-            <Text style={styles.socialText}>Continue with Apple</Text>
+            <Text style={styles.socialText}>{t("continue_apple")}</Text>
           </TouchableOpacity>
 
           {/* Google */}
@@ -204,7 +221,7 @@ export default function SignUpScreen() {
               source={require("../assets/images/Google.png")}
               style={{ width: 22, height: 22, marginRight: 10, resizeMode: 'contain' }}
             />
-            <Text style={styles.socialText}>Continue with Google</Text>
+            <Text style={styles.socialText}>{t("continue_google")}</Text>
           </TouchableOpacity>
 
           {/* Facebook */}
@@ -224,17 +241,17 @@ export default function SignUpScreen() {
                 color="#FFF"
               />
             </View>
-            <Text style={styles.socialText}>Continue with Facebook</Text>
+            <Text style={styles.socialText}>{t("continue_facebook")}</Text>
           </TouchableOpacity>
 
           {/* Bottom Link */}
           <Text style={styles.bottomText}>
-            Already have an account?{" "}
+            {t("already_have_account")}{" "}
             <Text
               style={styles.link}
               onPress={() => router.push("/login")}
             >
-              Login
+              {t("login")}
             </Text>
           </Text>
         </ScrollView>
@@ -295,6 +312,49 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: "#F9F9F9", // Slight bg for inputs
     color: "#000", // Ensure text is visible
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 55,
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: "#F9F9F9",
+  },
+  passwordInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 16,
+    color: "#000",
+  },
+  eyeIcon: {
+    padding: 8,
+  },
+  phoneInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 55,
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: "#F9F9F9",
+  },
+  phonePrefix: {
+    fontSize: 16,
+    color: "#000",
+    marginRight: 10,
+    fontWeight: '600',
+  },
+  phoneInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 16,
+    color: "#000",
   },
   button: {
     backgroundColor: "#000",

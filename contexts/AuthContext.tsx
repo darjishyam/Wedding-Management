@@ -16,6 +16,7 @@ interface AuthContextType {
     register: (name: string, email: string, mobile: string, password: string, firebaseVerified?: boolean) => Promise<any>;
     verifyOtp: (mobile: string, otp: string) => Promise<void>;
     logout: () => Promise<void>;
+    deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -99,8 +100,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const deleteAccount = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            await api.delete('/auth/delete-account', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            await logout();
+        } catch (error: any) {
+            console.error("Delete account failed", error.response?.data);
+            throw error;
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, isLoading, login, register, verifyOtp, logout }}>
+        <AuthContext.Provider value={{ user, isLoading, login, register, verifyOtp, logout, deleteAccount }}>
             {children}
         </AuthContext.Provider>
     );

@@ -5,11 +5,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useGuest } from "@/contexts/GuestContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function InvitationListScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { guests, isLoading } = useGuest();
+  const { t } = useLanguage();
 
   const handleAddGuest = () => {
     if (!user) {
@@ -34,7 +36,7 @@ export default function InvitationListScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.navTitle}>Invitation List</Text>
+          <Text style={styles.navTitle}>{t("invitation_list")}</Text>
           <View style={styles.placeholder} />
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -42,10 +44,10 @@ export default function InvitationListScreen() {
             <View style={styles.iconContainer}>
               <Image source={require("../assets/images/empty_guest.png")} style={{ width: 240, height: 240, resizeMode: "contain" }} />
             </View>
-            <Text style={styles.primaryText}>No Guests Added</Text>
-            <Text style={styles.secondaryText}>Let's Start Preparing guests list.</Text>
+            <Text style={styles.primaryText}>{t("no_guests_added")}</Text>
+            <Text style={styles.secondaryText}>{t("start_preparing_guest_list")}</Text>
             <TouchableOpacity style={styles.addButton} onPress={handleAddGuest}>
-              <Text style={styles.addButtonText}>Add New Guest</Text>
+              <Text style={styles.addButtonText}>{t("add_new_guest")}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -59,7 +61,7 @@ export default function InvitationListScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Invitation List ({guests.length})</Text>
+        <Text style={styles.navTitle}>{t("invitation_list")} ({guests.length})</Text>
         <TouchableOpacity style={styles.addButtonSmall} onPress={handleAddGuest}>
           <Ionicons name="add" size={24} color="#000" />
         </TouchableOpacity>
@@ -70,11 +72,11 @@ export default function InvitationListScreen() {
           <View key={guest._id || index} style={styles.guestCard}>
             <View style={styles.guestInfo}>
               <Text style={styles.guestName}>{guest.name}</Text>
-              <Text style={styles.guestDetails}>{guest.city} • {guest.count} Family Members</Text>
+              <Text style={styles.guestDetails}>{guest.cityVillage} • {guest.familyCount} Family Members</Text>
             </View>
             {/* Placeholder for invite status */}
             <View style={styles.inviteStatus}>
-              <Text style={styles.inviteText}>Pending</Text>
+              <Text style={styles.inviteText}>{t("pending")}</Text>
             </View>
           </View>
         ))}

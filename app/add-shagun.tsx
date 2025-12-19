@@ -1,3 +1,4 @@
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useShagun } from "@/contexts/ShagunContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -8,17 +9,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function AddShagunScreen() {
   const router = useRouter();
   const { addShagun } = useShagun();
+  const { t } = useLanguage();
   const [name, setName] = useState("Moon");
   const [shagunAmount, setShagunAmount] = useState("₹ 2000");
   const [city, setCity] = useState("Surat");
   const [gift1, setGift1] = useState("Gift");
-  const [contact, setContact] = useState("+91 99999 99999");
+  const [contact, setContact] = useState("9999999999");
   const [wishes, setWishes] = useState("Best wishes");
 
   const handleSave = () => {
     // Validation
     if (!name.trim() || !shagunAmount.trim() || !city.trim() || !gift1.trim() || !contact.trim() || !wishes.trim()) {
-      Alert.alert("Error", "All fields are mandatory.");
+      Alert.alert(t("error"), t("all_fields_mandatory"));
       return;
     }
 
@@ -37,7 +39,7 @@ export default function AddShagunScreen() {
     // Let's try: Clean non-digits. If length is 10, good. If length is 12 and starts with 91, good.
     const digits = cleanedContact.slice(-10);
     if (cleanedContact.length < 10 || digits.length !== 10) {
-      Alert.alert("Error", "Mobile number must be valid 10 digits.");
+      Alert.alert(t("error"), t("mobile_invalid"));
       return;
     }
 
@@ -72,7 +74,7 @@ export default function AddShagunScreen() {
           >
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.navTitle}>Add New Shagun</Text>
+          <Text style={styles.navTitle}>{t("add_new_shagun")}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -85,7 +87,7 @@ export default function AddShagunScreen() {
         >
           {/* Name Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Name</Text>
+            <Text style={styles.label}>{t("name")}</Text>
             <TextInput
               style={styles.input}
               value={name}
@@ -97,7 +99,7 @@ export default function AddShagunScreen() {
 
           {/* Shagun Amount Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Shagun Amount</Text>
+            <Text style={styles.label}>{t("shagun_amount")}</Text>
             <TextInput
               style={styles.input}
               value={shagunAmount}
@@ -110,7 +112,7 @@ export default function AddShagunScreen() {
 
           {/* City/Village Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>City/Village</Text>
+            <Text style={styles.label}>{t("city_village")}</Text>
             <TextInput
               style={styles.input}
               value={city}
@@ -122,32 +124,36 @@ export default function AddShagunScreen() {
 
           {/* Gift Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Gift</Text>
+            <Text style={styles.label}>{t("gift")}</Text>
             <TextInput
               style={styles.input}
               value={gift1}
               onChangeText={setGift1}
-              placeholder="Gift"
+              placeholder={t("gift")}
               placeholderTextColor="#999"
             />
           </View>
 
           {/* Contact Number Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Contact Number</Text>
-            <TextInput
-              style={styles.input}
-              value={contact}
-              onChangeText={setContact}
-              placeholder="+91 99999 99999"
-              placeholderTextColor="#999"
-              keyboardType="phone-pad"
-            />
+            <Text style={styles.label}>{t("contact_number")}</Text>
+            <View style={styles.phoneInputContainer}>
+              <Text style={styles.phonePrefix}>+91</Text>
+              <TextInput
+                style={styles.phoneInput}
+                value={contact}
+                onChangeText={setContact}
+                placeholder="99999 99999"
+                placeholderTextColor="#999"
+                keyboardType="phone-pad"
+                maxLength={10}
+              />
+            </View>
           </View>
 
           {/* Wishes Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Wishes/Message</Text>
+            <Text style={styles.label}>{t("wishes_message")}</Text>
             <TextInput
               style={styles.input}
               value={wishes}
@@ -165,14 +171,14 @@ export default function AddShagunScreen() {
             style={styles.saveAndAddButton}
             onPress={handleSaveAndAddAnother}
           >
-            <Text style={styles.saveAndAddButtonText}>Save And Add Another</Text>
+            <Text style={styles.saveAndAddButtonText}>{t("save_and_add_another")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.saveButton}
             onPress={handleSave}
           >
-            <Text style={styles.saveButtonText}>Save</Text>
+            <Text style={styles.saveButtonText}>{t("save")}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -231,6 +237,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#000",
     backgroundColor: "#FFFFFF",
+    fontWeight: "600",
+  },
+  phoneInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 55,
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+  },
+  phonePrefix: {
+    fontSize: 16,
+    color: "#000",
+    marginRight: 10,
+    fontWeight: '600',
+  },
+  phoneInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 16,
+    color: "#000",
     fontWeight: "600",
   },
   buttonContainer: {

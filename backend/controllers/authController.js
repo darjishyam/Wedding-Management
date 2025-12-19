@@ -1,6 +1,10 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Wedding = require('../models/Wedding');
+const Guest = require('../models/Guest');
+const Expense = require('../models/Expense');
+const Shagun = require('../models/Shagun');
 
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET || 'secret123', {
@@ -209,4 +213,26 @@ const loginUser = async (req, res) => {
     }
 };
 
-module.exports = { registerUser, loginUser, verifyOtp };
+// @desc    Delete user account and all data
+// @route   DELETE /api/auth/delete-account
+// @access  Private
+const deleteAccount = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        // Delete all associated data
+        await Wedding.deleteMany({ user: userId });
+        await Guest.deleteMany({ user: userId });
+        await Expense.deleteMany({ user: userId });
+        await Shagun.deleteMany({ user: userId });
+
+        // Delete user
+        await User.findByIdAndDelete(userId);
+
+        res.json({ message: 'User deleted' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { registerUser, loginUser, verifyOtp, deleteAccount };

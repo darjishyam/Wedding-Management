@@ -1,15 +1,52 @@
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DeleteAccountScreen() {
   const router = useRouter();
+  const { t } = useLanguage();
+  const { deleteAccount } = useAuth();
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDeleteAccount = () => {
-    // TODO: Implement account deletion logic
-    // After deletion, navigate to login or home
-    router.push("/login");
+  const handleDeleteAccount = async () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${t("delete_account")}\n\n${t("delete_account_warning")}`)) {
+        performDelete();
+      }
+    } else {
+      Alert.alert(
+        t("delete_account"),
+        t("delete_account_warning"),
+        [
+          { text: t("cancel"), style: "cancel" },
+          {
+            text: t("delete_account"),
+            style: "destructive",
+            onPress: performDelete
+          }
+        ]
+      );
+    }
+  };
+
+  const performDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteAccount();
+      router.replace("/onboarding");
+    } catch (error) {
+      if (Platform.OS === 'web') {
+        window.alert(`${t("error")}: ${t("failed_delete_account") || "Failed to delete account"}`);
+      } else {
+        Alert.alert(t("error"), t("failed_delete_account") || "Failed to delete account");
+      }
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -53,19 +90,24 @@ export default function DeleteAccountScreen() {
           </View>
 
           {/* Heading */}
-          <Text style={styles.heading}>Delete Account</Text>
+          <Text style={styles.heading}>{t("delete_account")}</Text>
 
           {/* Warning Text */}
           <Text style={styles.warningText}>
-            Are you sure you want to delete your account? This action is irreversible. Once deleted, you will lose access to your account permanently, and all associated data will be erased.
+            {t("delete_account_warning")}
           </Text>
 
           {/* Delete Button */}
           <TouchableOpacity
-            style={styles.deleteButton}
+            style={[styles.deleteButton, isDeleting && { opacity: 0.7 }]}
             onPress={handleDeleteAccount}
+            disabled={isDeleting}
           >
-            <Text style={styles.deleteButtonText}>Delete Account</Text>
+            {isDeleting ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.deleteButtonText}>{t("delete_account")}</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
