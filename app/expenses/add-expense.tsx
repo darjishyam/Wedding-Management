@@ -20,11 +20,13 @@ export default function AddExpenseScreen() {
     const { addExpense } = useExpense();
     const [title, setTitle] = useState("");
     const [amount, setAmount] = useState("");
-    const [category, setCategory] = useState("");
+    const [paidAmount, setPaidAmount] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // Predefined categories for quick selection
-    const categories = ["Venue", "Catering", "Decoration", "Photography", "Attire", "Other"];
+    // Calculate pending amount
+    const total = parseFloat(amount) || 0;
+    const paid = parseFloat(paidAmount) || 0;
+    const pending = total > paid ? total - paid : 0;
 
     const handleSave = async (shouldGoBack: boolean) => {
         if (!title || !amount) {
@@ -33,24 +35,28 @@ export default function AddExpenseScreen() {
         }
 
         const numAmount = parseFloat(amount);
+        const numPaid = parseFloat(paidAmount) || 0;
+
         if (isNaN(numAmount) || numAmount <= 0) {
             Alert.alert("Error", "Please enter a valid amount");
             return;
         }
 
+        if (numPaid > numAmount) {
+            Alert.alert("Error", "Paid amount cannot be greater than total amount");
+            return;
+        }
+
         setLoading(true);
         try {
-            await addExpense(title, numAmount, category || "Other");
+            await addExpense(title, numAmount, numPaid, "Other"); // Category hardcoded or we can add it back if needed, but design implies simplification
             Alert.alert("Success", "Expense added successfully");
             if (shouldGoBack) {
-                // Redirect to Home as per pattern, or back to list? 
-                // User requested: "displayed at my weddings dashboard... by clicking on expense it should display all"
-                // Let's go to /expenses list to confirm it's there.
                 router.replace("/expenses");
             } else {
                 setTitle("");
                 setAmount("");
-                setCategory("");
+                setPaidAmount("");
             }
         } catch (error) {
             Alert.alert("Error", "Failed to add expense");
@@ -65,11 +71,11 @@ export default function AddExpenseScreen() {
             <View style={styles.navBar}>
                 <TouchableOpacity
                     style={styles.backButton}
-                    onPress={() => router.back()}
+                    onPress={() => router.navigate('/(tabs)')}
                 >
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
-                <Text style={styles.navTitle}>Add Expense</Text>
+                <Text style={styles.navTitle}>Add New Expense</Text>
                 <View style={styles.placeholder} />
             </View>
 
@@ -81,49 +87,52 @@ export default function AddExpenseScreen() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Form Fields */}
                     <View style={styles.formContainer}>
 
-                        {/* Amount Input (Big) */}
-                        <View style={styles.amountContainer}>
-                            <Text style={styles.currencySymbol}>₹</Text>
-                            <TextInput
-                                style={styles.amountInput}
-                                placeholder="0"
-                                placeholderTextColor="#DDD"
-                                value={amount}
-                                onChangeText={setAmount}
-                                keyboardType="numeric"
-                            />
-                        </View>
-                        <Text style={styles.inputLabelCenter}>Enter Amount</Text>
-
-                        {/* Title Input */}
+                        {/* Expense For */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Expense Title</Text>
+                            <Text style={styles.inputLabel}>Expense For</Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder="e.g. Wedding Cake"
-                                placeholderTextColor="#999"
+                                placeholder=""
                                 value={title}
                                 onChangeText={setTitle}
                             />
                         </View>
 
-                        {/* Category Selection */}
+                        {/* Total Amount */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Category</Text>
-                            <View style={styles.categoryContainer}>
-                                {categories.map((cat) => (
-                                    <TouchableOpacity
-                                        key={cat}
-                                        style={[styles.categoryChip, category === cat && styles.categoryChipSelected]}
-                                        onPress={() => setCategory(cat)}
-                                    >
-                                        <Text style={[styles.categoryText, category === cat && styles.categoryTextSelected]}>{cat}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
+                            <Text style={styles.inputLabel}>Total Amount</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="₹ 0"
+                                value={amount ? `₹ ${amount}` : ''}
+                                onChangeText={(text) => setAmount(text.replace(/[^0-9.]/g, ''))}
+                                keyboardType="numeric"
+                            />
+                        </View>
+
+                        {/* Paid Deposit Amount */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Paid Deposit Amount</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="₹ 0"
+                                value={paidAmount ? `₹ ${paidAmount}` : ''}
+                                onChangeText={(text) => setPaidAmount(text.replace(/[^0-9.]/g, ''))}
+                                keyboardType="numeric"
+                            />
+                        </View>
+
+                        {/* Pending Amount */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Pending Amount</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="₹ 0"
+                                value={`₹ ${pending}`}
+                                editable={false}
+                            />
                         </View>
 
                     </View>
@@ -137,7 +146,7 @@ export default function AddExpenseScreen() {
                     onPress={() => handleSave(false)}
                     disabled={loading}
                 >
-                    <Text style={styles.saveMoreButtonText}>Save & Add More</Text>
+                    <Text style={styles.saveMoreButtonText}>Save And Add Another</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -164,8 +173,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 16,
         paddingBottom: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: "#F0F0F0",
     },
     backButton: {
         padding: 8,
@@ -186,96 +193,40 @@ const styles = StyleSheet.create({
     formContainer: {
         marginTop: 20,
     },
-    // Amount Styles
-    amountContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 20,
-        marginBottom: 8,
-    },
-    currencySymbol: {
-        fontSize: 40,
-        fontWeight: '700',
-        color: '#000',
-        marginRight: 8,
-    },
-    amountInput: {
-        fontSize: 48,
-        fontWeight: '700',
-        color: '#000',
-        minWidth: 100,
-        textAlign: 'center',
-    },
-    inputLabelCenter: {
-        textAlign: 'center',
-        color: '#999',
-        marginBottom: 40,
-    },
-
     inputGroup: {
-        marginBottom: 24,
+        marginBottom: 20,
     },
     inputLabel: {
         fontSize: 14,
-        fontWeight: "600",
-        color: "#333",
+        color: "#999",
         marginBottom: 8,
     },
     input: {
-        backgroundColor: "#F5F5F5",
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#F0F0F0",
         borderRadius: 12,
         paddingHorizontal: 16,
         paddingVertical: 14,
         fontSize: 16,
         color: "#000",
+        fontWeight: "600",
     },
-
-    // Category Chips
-    categoryContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    categoryChip: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: '#F0F0F0',
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-    },
-    categoryChipSelected: {
-        backgroundColor: '#000',
-        borderColor: '#000',
-    },
-    categoryText: {
-        fontSize: 14,
-        color: '#666',
-    },
-    categoryTextSelected: {
-        color: '#FFF',
-        fontWeight: '600',
-    },
-
     footer: {
-        flexDirection: "row",
         padding: 20,
         paddingBottom: Platform.OS === "ios" ? 34 : 20,
-        borderTopWidth: 1,
-        borderTopColor: "#F0F0F0",
         backgroundColor: "#FFFFFF",
         gap: 12,
     },
     saveMoreButton: {
-        flex: 1,
         backgroundColor: "#FFFFFF",
         borderWidth: 1,
-        borderColor: "#E6E6E6",
+        borderColor: "#000",
         borderRadius: 30,
         paddingVertical: 16,
         alignItems: "center",
         justifyContent: "center",
+        marginBottom: 8,
     },
     saveMoreButtonText: {
         color: "#000",
@@ -283,7 +234,6 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
     saveButton: {
-        flex: 1,
         backgroundColor: "#000",
         borderRadius: 30,
         paddingVertical: 16,

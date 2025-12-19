@@ -3,7 +3,7 @@ import { useExpense } from "@/contexts/ExpenseContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ExpenseListScreen() {
@@ -35,7 +35,7 @@ export default function ExpenseListScreen() {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.navBar}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.navigate('/(tabs)')}>
                         <Ionicons name="arrow-back" size={24} color="#000" />
                     </TouchableOpacity>
                     <Text style={styles.navTitle}>{t("expense")}</Text>
@@ -45,7 +45,7 @@ export default function ExpenseListScreen() {
                     <View style={styles.emptyContent}>
                         {/* Use the same empty image style for consistency */}
                         <View style={styles.iconContainer}>
-                            <Ionicons name="receipt-outline" size={100} color="#DDD" />
+                            <Image source={require('@/assets/images/dollar-circle.png')} style={{ width: 120, height: 120 }} resizeMode="contain" />
                         </View>
                         <Text style={styles.primaryText}>No Expenses Added</Text>
                         <Text style={styles.secondaryText}>Track your wedding spending here.</Text>
@@ -61,7 +61,7 @@ export default function ExpenseListScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.navBar}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                <TouchableOpacity style={styles.backButton} onPress={() => router.navigate('/(tabs)')}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
                 <Text style={styles.navTitle}>{t("expense")} ({expenses.length})</Text>

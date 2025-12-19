@@ -14,6 +14,10 @@ const expenseSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
+    paidAmount: {
+        type: Number,
+        default: 0,
+    },
     category: {
         type: String,
         required: true, // e.g., 'Food', 'Venue', 'Decoration'

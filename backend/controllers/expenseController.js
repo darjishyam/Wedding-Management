@@ -17,6 +17,7 @@ const addExpense = async (req, res) => {
             wedding: wedding._id,
             title,
             amount,
+            paidAmount: req.body.paidAmount || 0,
             category,
             date,
         });

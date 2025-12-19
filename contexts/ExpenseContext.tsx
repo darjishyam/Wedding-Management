@@ -6,6 +6,7 @@ interface Expense {
     _id?: string;
     title: string;
     amount: number;
+    paidAmount?: number;
     category: string;
     date: Date;
 }
@@ -13,7 +14,7 @@ interface Expense {
 interface ExpenseContextType {
     expenses: Expense[];
     isLoading: boolean;
-    addExpense: (title: string, amount: number, category: string, date?: Date) => Promise<void>;
+    addExpense: (title: string, amount: number, paidAmount: number, category: string, date?: Date) => Promise<void>;
     fetchExpenses: () => Promise<void>;
     totalAmount: number;
 }
@@ -38,12 +39,13 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const addExpense = async (title: string, amount: number, category: string, date: Date = new Date()) => {
+    const addExpense = async (title: string, amount: number, paidAmount: number, category: string, date: Date = new Date()) => {
         setIsLoading(true);
         try {
             const res = await api.post('/expenses', {
                 title,
                 amount,
+                paidAmount,
                 category,
                 date
             });
