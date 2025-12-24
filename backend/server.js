@@ -42,3 +42,13 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
+// Prevent crash on unhandled promise rejections (e.g. DB drop, Email fail)
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err);
+    // process.exit(1); // Don't crash for now, let it retry
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});

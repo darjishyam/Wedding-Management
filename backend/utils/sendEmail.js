@@ -24,6 +24,11 @@ transporter.verify(function (error, success) {
     }
 });
 
+// Handle idle connection errors to prevent crash
+transporter.on('error', (err) => {
+    console.error('SMTP Transport Error (Idle):', err.message);
+});
+
 const sendEmail = async (options) => {
     // Define the email options
     const mailOptions = {
