@@ -4,13 +4,19 @@ const sendEmail = async (options) => {
     // Create a transporter
     // For Render Free Tier / Serverless, it is better to create a FRESH connection
     // per email rather than pooling, because the server sleeps and kills idle connections.
-    // Use 'service: gmail' for automatic configuration
+    // Use standard settings with explicit timeouts to debug latency
     const transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
         auth: {
             user: process.env.SMTP_EMAIL,
             pass: process.env.SMTP_PASSWORD,
         },
+        // Increase timeouts for slow shared hosting
+        connectionTimeout: 20000, // 20 seconds
+        greetingTimeout: 20000,
+        socketTimeout: 20000,
     });
 
     // Define the email options
