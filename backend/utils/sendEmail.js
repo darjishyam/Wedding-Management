@@ -1,37 +1,49 @@
-const nodemailer = require('nodemailer');
+const axios = require('axios');
 
 const sendEmail = async (options) => {
-    // Create a transporter
-    // For Render Free Tier / Serverless, it is better to create a FRESH connection
-    // per email rather than pooling, because the server sleeps and kills idle connections.
-    // Brevo / Standard SMTP Configuration
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT,
-        secure: false, // true for 465, false for other ports
-        auth: {
-            user: process.env.SMTP_EMAIL,
-            pass: process.env.SMTP_PASSWORD,
-        },
-        // Explicit timeouts to avoid hanging connections
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000,
-    });
+    // USE BREVO HTTP API (Bypasses SMTP Port Blocking)
+    const apiKey = process.env.BREVO_API_KEY;
 
-    // Define the email options
-    const mailOptions = {
-        from: `${process.env.FROM_NAME || 'Support'} <${process.env.SMTP_EMAIL}>`,
-        to: options.email,
+    if (!apiKey) {
+        console.error('BREVO_API_KEY is missing in environment variables');
+        throw new Error('Email configuration missing');
+    }
+
+    const data = {
+        sender: {
+            name: process.env.FROM_NAME || 'Shagun App',
+            email: process.env.SMTP_EMAIL // Ensure this is a verified sender in Brevo
+        },
+        to: [
+            {
+                email: options.email,
+                name: options.name || options.email
+            }
+        ],
         subject: options.subject,
-        text: options.message,
+        textContent: options.message,
     };
 
-    // Send the email
-    const info = await transporter.sendMail(mailOptions);
+    try {
+        const response = await axios.post('https://api.brevo.com/v3/smtp/email', data, {
+            headers: {
+                'accept': 'application/json',
+                'api-key': apiKey,
+                'content-type': 'application/json'
+            },
+            timeout: 10000 // 10s timeout
+        });
 
-    console.log('Message sent: %s', info.messageId);
-    return info;
+        console.log('Email sent via Brevo API. MessageId:', response.data.messageId);
+        return response.data;
+    } catch (error) {
+        if (error.response) {
+            console.error('Brevo API Error:', error.response.status, error.response.data);
+        } else {
+            console.error('Email Sending Error:', error.message);
+        }
+        // Don't throw, just log, so flow continues (background)
+    }
 };
 
 module.exports = sendEmail;
