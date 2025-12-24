@@ -5,9 +5,9 @@ const sendEmail = async (options) => {
     // For Render Free Tier / Serverless, it is better to create a FRESH connection
     // per email rather than pooling, because the server sleeps and kills idle connections.
     const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT,
-        secure: false, // true for 465, false for other ports
+        host: process.env.SMTP_HOST || 'smtp.gmail.com', // Fallback to Gmail
+        port: 465, // Force Secure SSL port
+        secure: true, // true for 465, false for other ports
         auth: {
             user: process.env.SMTP_EMAIL,
             pass: process.env.SMTP_PASSWORD,
