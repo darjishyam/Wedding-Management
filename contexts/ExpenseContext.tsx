@@ -1,84 +1,38 @@
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import api from '../services/api';
-import { useAuth } from './AuthContext';
+import React from 'react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import {
+    addExpense as addExpenseAction,
+    fetchExpenses as fetchExpensesAction
+} from '../store/slices/expenseSlice';
 
-interface Expense {
-    _id?: string;
-    title: string;
-    amount: number;
-    paidAmount?: number;
-    category: string;
-    date: Date;
-}
+export function useExpense() {
+    const dispatch = useAppDispatch();
+    const { expenses: rawExpenses, isLoading } = useAppSelector(state => state.expense);
 
-interface ExpenseContextType {
-    expenses: Expense[];
-    isLoading: boolean;
-    addExpense: (title: string, amount: number, paidAmount: number, category: string, date?: Date) => Promise<void>;
-    fetchExpenses: () => Promise<void>;
-    totalAmount: number;
-}
-
-const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
-
-export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
-    const [expenses, setExpenses] = useState<Expense[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const { user } = useAuth();
-
-    const fetchExpenses = async () => {
-        if (!user) return;
-        setIsLoading(true);
-        try {
-            const res = await api.get('/expenses');
-            setExpenses(res.data);
-        } catch (error) {
-            console.error("Failed to fetch expenses", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const addExpense = async (title: string, amount: number, paidAmount: number, category: string, date: Date = new Date()) => {
-        setIsLoading(true);
-        try {
-            const res = await api.post('/expenses', {
-                title,
-                amount,
-                paidAmount,
-                category,
-                date
-            });
-            setExpenses(prev => [...prev, res.data]);
-        } catch (error) {
-            console.error("Failed to add expense", error);
-            throw error;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (user) {
-            fetchExpenses();
-        } else {
-            setExpenses([]);
-        }
-    }, [user]);
+    const expenses = rawExpenses.map((e: any) => ({
+        ...e,
+        date: e.date ? new Date(e.date) : new Date()
+    }));
 
     const totalAmount = expenses.reduce((sum, item) => sum + item.amount, 0);
 
-    return (
-        <ExpenseContext.Provider value={{ expenses, isLoading, addExpense, fetchExpenses, totalAmount }}>
-            {children}
-        </ExpenseContext.Provider>
-    );
-};
+    const addExpense = async (title: string, amount: number, paidAmount: number, category: string, date: Date = new Date()) => {
+        await dispatch(addExpenseAction({ title, amount, paidAmount, category, date: date.toISOString() })).unwrap();
+    };
 
-export const useExpense = () => {
-    const context = useContext(ExpenseContext);
-    if (!context) {
-        throw new Error('useExpense must be used within an ExpenseProvider');
-    }
-    return context;
-};
+    const fetchExpenses = async () => {
+        await dispatch(fetchExpensesAction());
+    };
+
+    return {
+        expenses,
+        isLoading,
+        addExpense,
+        fetchExpenses,
+        totalAmount
+    };
+}
+
+export function ExpenseProvider({ children }: { children: React.ReactNode }) {
+    return <>{children}</>;
+}

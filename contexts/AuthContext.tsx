@@ -1,129 +1,64 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import api from '../services/api';
+import React from 'react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import {
+    deleteAccount as deleteAccountAction,
+    login as loginAction,
+    logout as logoutAction,
+    register as registerAction,
+    reloadUser as reloadUserAction,
+    signInWithGoogle as signInWithGoogleAction,
+    verifyOtp as verifyOtpAction
+} from '../store/slices/authSlice';
 
-interface User {
-    _id: string;
-    name: string;
-    email: string;
-    mobile: string;
-}
-
-interface AuthContextType {
-    user: User | null;
-    isLoading: boolean;
-    login: (email: string, password: string) => Promise<void>;
-    register: (name: string, email: string, mobile: string, password: string, firebaseVerified?: boolean) => Promise<any>;
-    verifyOtp: (mobile: string, otp: string) => Promise<void>;
-    logout: () => Promise<void>;
-    deleteAccount: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        checkLoginStatus();
-    }, []);
-
-    const checkLoginStatus = async () => {
-        try {
-            const token = await AsyncStorage.getItem('userToken');
-            const userInfo = await AsyncStorage.getItem('userInfo');
-
-            if (token && userInfo) {
-                setUser(JSON.parse(userInfo));
-            }
-        } catch (e) {
-            console.log('Failed to load user info');
-        }
-        setIsLoading(false);
-    };
+// We keep the interface to satisfy existing code, mostly inferred
+export function useAuth() {
+    const dispatch = useAppDispatch();
+    const { user, isLoading, isDemo } = useAppSelector(state => state.auth);
 
     const login = async (email: string, password: string) => {
-        try {
-            const response = await api.post('/auth/login', { email, password });
-            const { token, ...userData } = response.data;
-
-            await AsyncStorage.setItem('userToken', token);
-            await AsyncStorage.setItem('userInfo', JSON.stringify(userData));
-            setUser(userData);
-        } catch (error: any) {
-            console.error("Login failed", error.response?.data);
-            throw error;
-        }
+        await dispatch(loginAction({ email, password })).unwrap();
     };
 
-    const register = async (name: string, email: string, mobile: string, password: string, firebaseVerified: boolean = false) => {
-        try {
-            const response = await api.post('/auth/signup', { name, email, mobile, password, firebaseVerified });
-
-            // If firebaseVerified is true, backend returns token and user data immediately
-            if (firebaseVerified && response.data.token) {
-                const { token, ...userData } = response.data;
-                await AsyncStorage.setItem('userToken', token);
-                await AsyncStorage.setItem('userInfo', JSON.stringify(userData));
-                setUser(userData);
-            }
-
-            return response.data;
-        } catch (error: any) {
-            console.error("Registration failed", error.response?.data);
-            throw error;
-        }
+    const register = async (name: string, email: string, mobile: string, password: string, firebaseVerified?: boolean) => {
+        const result = await dispatch(registerAction({ name, email, mobile, password, firebaseVerified })).unwrap();
+        return result;
     };
 
     const verifyOtp = async (mobile: string, otp: string) => {
-        try {
-            const response = await api.post('/auth/verify-otp', { mobile, otp });
-            const { token, ...userData } = response.data;
-
-            await AsyncStorage.setItem('userToken', token);
-            await AsyncStorage.setItem('userInfo', JSON.stringify(userData));
-            setUser(userData);
-        } catch (error: any) {
-            console.error("OTP verification failed", error.response?.data);
-            throw error;
-        }
+        await dispatch(verifyOtpAction({ mobile, otp })).unwrap();
     };
 
     const logout = async () => {
-        try {
-            await AsyncStorage.removeItem('userToken');
-            await AsyncStorage.removeItem('userInfo');
-            setUser(null);
-        } catch (e) {
-            console.error(e);
-        }
+        await dispatch(logoutAction());
+    };
+
+    const reloadUser = async () => {
+        await dispatch(reloadUserAction());
     };
 
     const deleteAccount = async () => {
-        try {
-            const token = await AsyncStorage.getItem('userToken');
-            await api.delete('/auth/delete-account', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            await logout();
-        } catch (error: any) {
-            console.error("Delete account failed", error.response?.data);
-            throw error;
-        }
+        await dispatch(deleteAccountAction());
     };
 
-    return (
-        <AuthContext.Provider value={{ user, isLoading, login, register, verifyOtp, logout, deleteAccount }}>
-            {children}
-        </AuthContext.Provider>
-    );
+    const signInWithGoogle = async () => {
+        await dispatch(signInWithGoogleAction()).unwrap();
+    };
+
+    return {
+        user,
+        isLoading,
+        isDemo,
+        login,
+        register,
+        verifyOtp,
+        logout,
+        reloadUser,
+        deleteAccount,
+        signInWithGoogle
+    };
 }
 
-export function useAuth() {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
+// Dummy Provider to prevent crashes if I missed removing it somewhere, but ideally unused.
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+    return <>{children}</>;
 }

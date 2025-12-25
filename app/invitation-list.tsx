@@ -6,11 +6,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGuest } from "@/contexts/GuestContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { PDFService } from "@/services/PDFService";
 
 export default function InvitationListScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { guests, isLoading } = useGuest();
+  const { guests, isLoading, updateGuestStatus } = useGuest();
   const { t } = useLanguage();
 
   const handleAddGuest = () => {
@@ -26,6 +27,23 @@ export default function InvitationListScreen() {
       return;
     }
     router.push("/add-guest");
+  };
+
+  const handleExportPDF = async () => {
+    if (!user?.isPremium) {
+      Alert.alert(
+        "Premium Feature",
+        "Exporting to PDF is a premium feature. Upgrade to unlock!",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Upgrade", onPress: () => router.push("/purchase-premium") }
+        ]
+      );
+      return;
+    }
+
+    const html = PDFService.generateGuestListHTML(guests, guests.length);
+    await PDFService.generateAndSharePDF(html, "GuestList");
   };
 
   // If no guests, show empty state
@@ -65,6 +83,9 @@ export default function InvitationListScreen() {
         <TouchableOpacity style={styles.addButtonSmall} onPress={handleAddGuest}>
           <Ionicons name="add" size={24} color="#000" />
         </TouchableOpacity>
+        <TouchableOpacity style={styles.addButtonSmall} onPress={handleExportPDF}>
+          <Ionicons name="document-text-outline" size={24} color="#000" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.listContent}>
@@ -74,10 +95,15 @@ export default function InvitationListScreen() {
               <Text style={styles.guestName}>{guest.name}</Text>
               <Text style={styles.guestDetails}>{guest.cityVillage} • {guest.familyCount} Family Members</Text>
             </View>
-            {/* Placeholder for invite status */}
-            <View style={styles.inviteStatus}>
-              <Text style={styles.inviteText}>{t("pending")}</Text>
-            </View>
+            {/* Invite Status Toggle */}
+            <TouchableOpacity
+              style={[styles.inviteStatus, guest.isInvited && styles.inviteStatusSent]}
+              onPress={() => updateGuestStatus(guest._id, !guest.isInvited)}
+            >
+              <Text style={[styles.inviteText, guest.isInvited && styles.inviteTextSent]}>
+                {guest.isInvited ? t("sent") || "Sent" : t("pending") || "Pending"}
+              </Text>
+            </TouchableOpacity>
           </View>
         ))}
       </ScrollView>
@@ -86,7 +112,7 @@ export default function InvitationListScreen() {
       <TouchableOpacity style={styles.fab} onPress={handleAddGuest}>
         <Ionicons name="add" size={30} color="#FFF" />
       </TouchableOpacity>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
 
@@ -211,6 +237,15 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-  }
+  },
+  inviteStatusSent: {
+    backgroundColor: "#E8F5E9",
+    borderColor: "#4CAF50",
+    borderWidth: 1,
+  },
+  inviteTextSent: {
+    color: "#4CAF50",
+    fontWeight: "600",
+  },
 });
 

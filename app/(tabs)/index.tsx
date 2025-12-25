@@ -1,3 +1,5 @@
+import DashboardCard from "@/components/DashboardCard";
+import StatBox from "@/components/StatBox";
 import { useAuth } from "@/contexts/AuthContext";
 import { useExpense } from "@/contexts/ExpenseContext";
 import { useGuest } from "@/contexts/GuestContext";
@@ -179,7 +181,12 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
 
   const totalSpent = totalAmount || weddingData.startStatistics?.totalSpent || 0;
   const totalBudget = weddingData.totalBudget || 0;
-  const remainingBudget = totalBudget - totalSpent;
+  // const remainingBudget = totalBudget - totalSpent; 
+
+  // Wait, user asked to remove "remaining" logic in a previous step? 
+  // Checking previous task.md or summary... 
+  // "Context: Refine Budget Display - When budget is set, display Total Budget and Spent, removing Remaining".
+  // So yes, I will stick to that logic here.
 
   const handleSaveBudget = async () => {
     const val = parseFloat(budgetInput);
@@ -233,110 +240,93 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
         showsVerticalScrollIndicator={false}
       >
         {/* Shagun Book Card */}
-        <TouchableOpacity
-          style={[styles.card, styles.shagunBookCard]}
+        <DashboardCard
+          title={t("shagun_book")}
+          icon="book"
           onPress={() => router.push("/(tabs)/chandla")}
-          activeOpacity={0.9}
+          style={{ backgroundColor: "#FCE9B0" }}
         >
-          <View style={styles.cardHeader}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="book" size={18} color="#000" />
-            </View>
-            <Text style={styles.cardTitle}>{t("shagun_book")}</Text>
-          </View>
-          <View style={styles.cardInternalRow}>
-            <View style={[styles.statBox, styles.shagunStatBox]}>
-              <Ionicons name="person" size={24} color="#000" style={styles.statIcon} />
-              <Text style={styles.statLabel}>{t("people")}</Text>
-              <Text style={styles.statValue}>{shagunEntries.length}</Text>
-            </View>
-            <View style={[styles.statBox, styles.shagunStatBox]}>
-              <Ionicons name="cash" size={24} color="#000" style={styles.statIcon} />
-              <Text style={styles.statLabel}>{t("total_chandlo")}</Text>
-              <Text style={styles.statValue}>₹ {totalChandlo.toLocaleString()}</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+          <StatBox
+            label={t("people")}
+            value={shagunEntries.length}
+            icon="person"
+            style={{ backgroundColor: "rgba(244, 222, 156, 0.6)" }}
+          />
+          <StatBox
+            label={t("total_chandlo")}
+            value={`₹ ${totalChandlo.toLocaleString()}`}
+            icon="cash"
+            style={{ backgroundColor: "rgba(244, 222, 156, 0.6)" }}
+          />
+        </DashboardCard>
 
         {/* Expense Card */}
-        {/* Expense Card */}
-        <TouchableOpacity
-          style={[styles.card, styles.expenseCard]}
-          onPress={() => {
-            if (totalBudget > 0) {
-              router.push("/expenses");
-            } else {
+        {totalBudget === 0 ? (
+          <DashboardCard
+            title={t("expense")}
+            icon="wallet"
+            onPress={() => {
               setBudgetInput("0");
               setShowBudgetModal(true);
-            }
-          }}
-          activeOpacity={0.9}
-        >
-          <View style={styles.cardHeader}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="wallet" size={18} color="#000" />
+            }}
+            style={{ backgroundColor: "#FADADD" }}
+          >
+            <View style={[styles.emptyContentCentered, { width: '100%' }]}>
+              <View style={styles.addIconCircle}>
+                <Ionicons name="add" size={30} color="#000" />
+              </View>
+              <Text style={styles.emptyActionText}>{t("set_budget")}</Text>
             </View>
-            <Text style={styles.cardTitle}>{t("expense")}</Text>
-            {/* Edit Budget Icon - Only show if budget is set */}
-            {totalBudget > 0 && (
-              <TouchableOpacity onPress={() => { setBudgetInput(totalBudget.toString()); setShowBudgetModal(true); }} style={{ marginLeft: 'auto', padding: 4 }}>
+          </DashboardCard>
+        ) : (
+          <DashboardCard
+            title={t("expense")}
+            icon="wallet"
+            onPress={() => router.push("/expenses")}
+            rightElement={
+              <TouchableOpacity onPress={() => { setBudgetInput(totalBudget.toString()); setShowBudgetModal(true); }} style={{ padding: 4 }}>
                 <Ionicons name="pencil" size={18} color="#000" />
               </TouchableOpacity>
-            )}
-          </View>
+            }
+            style={{ backgroundColor: "#FADADD" }}
+          >
+            <StatBox
+              label={t("total_budget")}
+              value={`₹ ${totalBudget.toLocaleString()}`}
+              imageSource={require("../../assets/images/dollar-circle.png")}
+              style={{ backgroundColor: "rgba(242, 198, 206, 0.6)" }}
+            />
+            <StatBox
+              label={t("spent")}
+              value={`₹ ${totalSpent.toLocaleString()}`}
+              imageSource={require("../../assets/images/money-send.png")}
+              style={{ backgroundColor: "rgba(242, 198, 206, 0.6)" }}
+            />
+          </DashboardCard>
+        )}
 
-          {totalBudget === 0 ? (
-            // Empty State: Set Budget
-            <View style={[styles.cardInternalRow, { justifyContent: 'center', paddingVertical: 10 }]}>
-              <View style={{ alignItems: 'center' }}>
-                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
-                  <Ionicons name="add" size={30} color="#000" />
-                </View>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: '#000' }}>{t("set_budget")}</Text>
-              </View>
-            </View>
-          ) : (
-            // Filled State: Total Budget & Spent
-            <View style={styles.cardInternalRow}>
-              <View style={[styles.statBox, styles.expenseStatBox]}>
-                <Image source={require("../../assets/images/dollar-circle.png")} style={{ width: 36, height: 36, marginBottom: 4, resizeMode: "contain", tintColor: "#000" }} />
-                <Text style={styles.statLabel}>Total Budget</Text>
-                <Text style={styles.statValue}>₹ {totalBudget.toLocaleString()}</Text>
-              </View>
-              <View style={[styles.statBox, styles.expenseStatBox]}>
-                <Image source={require("../../assets/images/money-send.png")} style={{ width: 36, height: 36, marginBottom: 4, resizeMode: "contain", tintColor: "#000" }} />
-                <Text style={styles.statLabel}>{t("spent")}</Text>
-                <Text style={styles.statValue}>₹ {totalSpent.toLocaleString()}</Text>
-              </View>
-            </View>
-          )}
-        </TouchableOpacity>
 
-        {/* Invitation Card */}
-        <TouchableOpacity
-          style={[styles.card, styles.invitationCard]}
+        {/* Guest List Card */}
+        <DashboardCard
+          title={t("invitation") || "Invitation"}
+          icon="paper-plane"
           onPress={() => router.push("/invitation-list")}
-          activeOpacity={0.9}
+          style={{ backgroundColor: "#DFF1FF" }}
         >
-          <View style={styles.cardHeader}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="paper-plane" size={18} color="#000" />
-            </View>
-            <Text style={styles.cardTitle}>{t("invitation")}</Text>
-          </View>
-          <View style={styles.cardInternalRow}>
-            <View style={[styles.statBox, styles.invitationStatBox]}>
-              <Image source={require("../../assets/images/direct-send.png")} style={{ width: 36, height: 36, marginBottom: 4, resizeMode: "contain", tintColor: "#000" }} />
-              <Text style={styles.statLabel}>{t("invitation_sent")}</Text>
-              <Text style={styles.statValue}>{guests.length}</Text>
-            </View>
-            <View style={[styles.statBox, styles.invitationStatBox]}>
-              <Image source={require("../../assets/images/empty_guest.png")} style={{ width: 36, height: 36, marginBottom: 4, resizeMode: "contain", tintColor: "#000" }} />
-              <Text style={styles.statLabel}>{t("total_guest")}</Text>
-              <Text style={styles.statValue}>{guests.reduce((sum, guest) => sum + (guest.familyCount || 1), 0)}</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+          <StatBox
+            label={t("invitation_sent")}
+            value={guests.filter(g => g.isInvited).length}
+            imageSource={require("../../assets/images/direct-send.png")}
+            style={{ backgroundColor: "rgba(203, 230, 248, 0.6)" }}
+          />
+          <StatBox
+            label={t("total_guest")}
+            value={guests.reduce((sum, guest) => sum + (guest.familyCount || 1), 0)}
+            imageSource={require("../../assets/images/empty_guest.png")}
+            style={{ backgroundColor: "rgba(203, 230, 248, 0.6)" }}
+          />
+        </DashboardCard>
+
       </ScrollView>
 
       {/* Budget Modal */}
@@ -514,76 +504,26 @@ const styles = StyleSheet.create({
     paddingBottom: 110, // Clearance for Footer
   },
 
-  // Card Styles
-  card: {
+  // Replaced styling for card internals
+  // emptyContentCentered used for "Set Budget" state
+  emptyContentCentered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  addIconCircle: {
+    width: 48,
+    height: 48,
     borderRadius: 24,
-    padding: 16,
-    marginBottom: 20,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  shagunBookCard: {
-    backgroundColor: "#FCE9B0",
-  },
-  expenseCard: {
-    backgroundColor: "#FADADD",
-  },
-  invitationCard: {
-    backgroundColor: "#DFF1FF",
-    // Remove extra margin bottom as scrollview padding handles clearance
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  iconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(0,0,0,0.05)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  cardTitle: {
+  emptyActionText: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#000",
-  },
-
-  // Internal Row
-  cardInternalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  statBox: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 16,
-    height: 110,
-    justifyContent: "space-between",
-  },
-  shagunStatBox: {
-    backgroundColor: "rgba(244, 222, 156, 0.6)", // #F4DE9C darker yellow
-  },
-  expenseStatBox: {
-    backgroundColor: "rgba(242, 198, 206, 0.6)", // #F2C6CE darker pink
-  },
-  invitationStatBox: {
-    backgroundColor: "rgba(203, 230, 248, 0.6)", // #CBE6F8 darker blue
-  },
-  statIcon: {
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 2,
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#000",
+    fontWeight: '600',
+    color: '#000',
   },
   // Modal Styles
   modalOverlay: {

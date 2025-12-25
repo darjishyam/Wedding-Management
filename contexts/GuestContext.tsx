@@ -1,76 +1,50 @@
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import api from '../services/api';
-import { useWedding } from './WeddingContext';
+import React from 'react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import {
+    addGuest as addGuestAction,
+    fetchGuests as fetchGuestsAction,
+    updateGuestStatus as updateGuestStatusAction
+} from '../store/slices/guestSlice';
 
-interface Guest {
-    _id: string;
-    name: string;
-    familyCount: number;
-    cityVillage: string;
-}
+export function useGuest() {
+    const dispatch = useAppDispatch();
+    const { guests, isLoading } = useAppSelector(state => state.guest);
+    // We might need to check if wedding exists to fetch guests, similar to original logic.
+    // Original: useEffect -> if hasWedding, fetchGuests.
+    // We can replicate that here or let the component consumer handle it.
+    // Existing components rely on Context doing it automatically.
+    // So I should probably include the useEffect here if I can import `useWedding`.
+    // But `useWedding` will use Redux too so it's fine.
 
-interface GuestContextType {
-    guests: Guest[];
-    isLoading: boolean;
-    addGuest: (name: string, count: number, city: string) => Promise<void>;
-    fetchGuests: () => Promise<void>;
-}
+    // However, calling hooks inside hooks is fine.
+    // But I need to be careful about circular dependencies if useWedding imports useGuest (unlikely).
 
-const GuestContext = createContext<GuestContextType | undefined>(undefined);
+    // Data fetching is now handled by StoreInitializer to avoid multiple triggers
 
-export function GuestProvider({ children }: { children: ReactNode }) {
-    const { hasWedding } = useWedding();
-    const [guests, setGuests] = useState<Guest[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-
-    useEffect(() => {
-        if (hasWedding) {
-            fetchGuests();
-        } else {
-            setGuests([]);
-        }
-    }, [hasWedding]);
+    // const hasWedding = useAppSelector(state => !!state.wedding.weddingData);
+    // useEffect(() => { ... }, [hasWedding]);
 
     const fetchGuests = async () => {
-        setIsLoading(true);
-        try {
-            const res = await api.get('/guests');
-            setGuests(res.data);
-        } catch (error) {
-            console.error("Failed to fetch guests", error);
-        } finally {
-            setIsLoading(false);
-        }
+        await dispatch(fetchGuestsAction());
     };
 
     const addGuest = async (name: string, count: number, city: string) => {
-        setIsLoading(true);
-        try {
-            const res = await api.post('/guests', {
-                name,
-                familyCount: count,
-                cityVillage: city
-            });
-            setGuests(prev => [...prev, res.data]);
-        } catch (error) {
-            console.error("Failed to add guest", error);
-            throw error;
-        } finally {
-            setIsLoading(false);
-        }
+        await dispatch(addGuestAction({ name, count, city })).unwrap();
     };
 
-    return (
-        <GuestContext.Provider value={{ guests, isLoading, addGuest, fetchGuests }}>
-            {children}
-        </GuestContext.Provider>
-    );
+    const updateGuestStatus = async (id: string, isInvited: boolean) => {
+        await dispatch(updateGuestStatusAction({ id, isInvited }));
+    };
+
+    return {
+        guests,
+        isLoading,
+        addGuest,
+        fetchGuests,
+        updateGuestStatus
+    };
 }
 
-export function useGuest() {
-    const context = useContext(GuestContext);
-    if (context === undefined) {
-        throw new Error('useGuest must be used within a GuestProvider');
-    }
-    return context;
+export function GuestProvider({ children }: { children: React.ReactNode }) {
+    return <>{children}</>;
 }

@@ -2,6 +2,7 @@ import { RangeSlider } from "@/components/RangeSlider";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useShagun } from "@/contexts/ShagunContext";
+import { PDFService } from "@/services/PDFService";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -62,6 +63,25 @@ export default function MyChandlaScreen() {
 
   const handleNext = () => {
     setShowSortModal(false);
+  };
+
+  const handleExportPDF = async () => {
+    if (!user?.isPremium) {
+      Alert.alert(
+        "Premium Feature",
+        "Exporting shagun book to PDF is a premium feature. Upgrade to unlock!",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Upgrade", onPress: () => router.push("/purchase-premium") }
+        ]
+      );
+      return;
+    }
+    const totalRec = shagunEntries.filter(s => s.type === 'received').reduce((sum, s) => sum + extractAmount(s.amount), 0);
+    const totalGiven = shagunEntries.filter(s => s.type === 'given').reduce((sum, s) => sum + extractAmount(s.amount), 0);
+
+    const html = PDFService.generateShagunListHTML(filteredEntries.length > 0 ? filteredEntries : shagunEntries, totalRec, totalGiven);
+    await PDFService.generateAndSharePDF(html, "ShagunBook");
   };
 
   // Empty state handling remains if needed, but for now focusing on list view implementation
@@ -133,6 +153,13 @@ export default function MyChandlaScreen() {
             >
               <Ionicons name="swap-vertical-outline" size={18} color="#000" />
               <Text style={styles.sortButtonText}>Sort</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sortButton}
+              onPress={handleExportPDF}
+            >
+              <Ionicons name="document-text-outline" size={18} color="#000" />
+              <Text style={styles.sortButtonText}>Export</Text>
             </TouchableOpacity>
           </View>
 
@@ -308,7 +335,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     height: 55,
     backgroundColor: "#FAFAFA",
-    borderRadius: 30, // Fully rounded search bar
+    borderRadius: 30,
     paddingHorizontal: 20,
   },
   searchIcon: {
@@ -353,14 +380,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 100,
   },
   card: {
-    backgroundColor: "#FFFFFF", // White card
+    backgroundColor: "#FFFFFF",
     borderRadius: 24,
     padding: 16,
     marginBottom: 20,
-    // Soft shadow
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -391,7 +417,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#E6E6E6", // Light grey circle
+    backgroundColor: "#E6E6E6",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -407,7 +433,7 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: "#EAEAEA", // Grey background for stats
+    backgroundColor: "#EAEAEA",
     borderRadius: 16,
     padding: 12,
   },
@@ -427,7 +453,7 @@ const styles = StyleSheet.create({
     color: "#000",
   },
   wishesBox: {
-    backgroundColor: "#EAEAEA", // Grey background for wishes
+    backgroundColor: "#EAEAEA",
     borderRadius: 16,
     padding: 12,
     width: "100%",
@@ -538,7 +564,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: "absolute",
-    bottom: Platform.OS === "ios" ? 110 : 90, // Above tab bar
+    bottom: Platform.OS === "ios" ? 110 : 90,
     right: 20,
     width: 56,
     height: 56,
@@ -562,13 +588,11 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  // Empty State Styles
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 30,
-    // Removed marginTop: -40 to ensure true centering
   },
   emptyIconContainer: {
     width: 200,
@@ -611,3 +635,5 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
+

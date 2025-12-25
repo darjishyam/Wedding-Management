@@ -8,16 +8,18 @@ import Constants from 'expo-constants';
 const debuggerHost = Constants.expoConfig?.hostUri;
 const localhost = debuggerHost?.split(":")[0];
 
+// Define BASE_URL with Tunnel URL for Android to bypass firewall issues
 const BASE_URL = Platform.OS === 'web'
     ? `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:5000/api`
     : Platform.OS === 'android'
-        ? `http://${localhost || '10.0.2.2'}:5000/api`
+        ? 'https://marriage-repo.onrender.com/api'
         : 'http://localhost:5000/api';
 
 const api = axios.create({
     baseURL: BASE_URL,
     headers: {
         'Content-Type': 'application/json',
+        'Bypass-Tunnel-Reminder': 'true',
     },
 });
 

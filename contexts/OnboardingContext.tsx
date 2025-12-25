@@ -1,75 +1,30 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import React from 'react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import {
+  completeOnboarding as completeAction,
+  resetOnboarding as resetAction
+} from '../store/slices/onboardingSlice';
 
-interface OnboardingContextType {
-  hasCompletedOnboarding: boolean;
-  completeOnboarding: () => Promise<void>;
-  resetOnboarding: () => Promise<void>;
-  isLoading: boolean;
-}
-
-const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
-
-const ONBOARDING_KEY = "@has_completed_onboarding";
-
-export function OnboardingProvider({ children }: { children: ReactNode }) {
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    checkOnboardingStatus();
-  }, []);
-
-  const checkOnboardingStatus = async () => {
-    try {
-      // TEMP: Reset onboarding for dev visualization as requested
-      // await AsyncStorage.removeItem(ONBOARDING_KEY);
-      // To force it every time, uncomment above or just use this:
-      await AsyncStorage.removeItem(ONBOARDING_KEY);
-
-      const value = await AsyncStorage.getItem(ONBOARDING_KEY);
-      setHasCompletedOnboarding(value === "true");
-    } catch (error) {
-      console.error("Error checking onboarding status:", error);
-      setHasCompletedOnboarding(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+export function useOnboarding() {
+  const dispatch = useAppDispatch();
+  const { hasCompletedOnboarding, isLoading } = useAppSelector(state => state.onboarding);
 
   const completeOnboarding = async () => {
-    try {
-      await AsyncStorage.setItem(ONBOARDING_KEY, "true");
-      // Do NOT set state here. This prevents app/index.tsx from reacting
-      // and redirecting to /(tabs) while we are trying to navigate naturally
-      // to Login, keeping the history stack intact for the Back button.
-      // The state will be updated on next app load via checkOnboardingStatus.
-    } catch (error) {
-      console.error("Error saving onboarding status:", error);
-    }
+    await dispatch(completeAction()).unwrap();
   };
 
   const resetOnboarding = async () => {
-    try {
-      await AsyncStorage.removeItem(ONBOARDING_KEY);
-      setHasCompletedOnboarding(false);
-    } catch (error) {
-      console.error("Error resetting onboarding status:", error);
-    }
+    await dispatch(resetAction()).unwrap();
   };
 
-  return (
-    <OnboardingContext.Provider value={{ hasCompletedOnboarding, completeOnboarding, resetOnboarding, isLoading }}>
-      {children}
-    </OnboardingContext.Provider>
-  );
+  return {
+    hasCompletedOnboarding,
+    completeOnboarding,
+    resetOnboarding,
+    isLoading
+  };
 }
 
-export function useOnboarding() {
-  const context = useContext(OnboardingContext);
-  if (context === undefined) {
-    throw new Error("useOnboarding must be used within an OnboardingProvider");
-  }
-  return context;
+export function OnboardingProvider({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }
-

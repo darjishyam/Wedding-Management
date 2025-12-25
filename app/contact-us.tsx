@@ -1,7 +1,8 @@
+import CustomHeader from "@/components/CustomHeader";
+import ScreenWrapper from "@/components/ScreenWrapper";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Linking, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ContactUsScreen() {
     const router = useRouter();
@@ -19,15 +20,8 @@ export default function ContactUsScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#000" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Contact Us</Text>
-                <View style={styles.placeholder} />
-            </View>
+        <ScreenWrapper>
+            <CustomHeader title="Contact Us" />
 
             <ScrollView
                 style={styles.scrollView}
@@ -96,37 +90,14 @@ export default function ContactUsScreen() {
                 </TouchableOpacity>
 
             </ScrollView>
-        </SafeAreaView>
+        </ScreenWrapper>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#FFFFFF",
-    },
-    header: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 12,
-    },
-    backButton: {
-        padding: 8,
-        marginLeft: -8,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: "#000",
-    },
-    placeholder: {
-        width: 40,
-    },
     scrollView: {
         flex: 1,
+        backgroundColor: "#FFFFFF",
     },
     scrollContent: {
         paddingHorizontal: 20,

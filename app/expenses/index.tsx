@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useExpense } from "@/contexts/ExpenseContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { PDFService } from "@/services/PDFService";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -25,6 +26,26 @@ export default function ExpenseListScreen() {
             return;
         }
         router.push("/expenses/add-expense");
+    };
+
+    const handleExportPDF = async () => {
+        if (!user?.isPremium) {
+            Alert.alert(
+                "Premium Feature",
+                "Exporting expenses to PDF is a premium feature. Upgrade to unlock!",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Upgrade", onPress: () => router.push("/purchase-premium") }
+                ]
+            );
+            return;
+        }
+
+        const totalBudget = 0; // TODO: Fetch budget from context if available
+        const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+        const html = PDFService.generateExpenseListHTML(expenses, totalBudget, totalSpent);
+        await PDFService.generateAndSharePDF(html, "ExpenseList");
     };
 
     const formatDate = (date: Date) => {
@@ -67,6 +88,9 @@ export default function ExpenseListScreen() {
                 <Text style={styles.navTitle}>{t("expense")} ({expenses.length})</Text>
                 <TouchableOpacity style={styles.addButtonSmall} onPress={handleAddExpense}>
                     <Ionicons name="add" size={24} color="#000" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.addButtonSmall} onPress={handleExportPDF}>
+                    <Ionicons name="document-text-outline" size={24} color="#000" />
                 </TouchableOpacity>
             </View>
 

@@ -1,22 +1,22 @@
 import { CalendarPicker } from "@/components/CalendarPicker";
+import CustomButton from "@/components/CustomButton";
+import CustomHeader from "@/components/CustomHeader";
+import CustomInput from "@/components/CustomInput";
+import ScreenWrapper from "@/components/ScreenWrapper";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useWedding } from "@/contexts/WeddingContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-
-import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function CreateWeddingScreen() {
   const router = useRouter();
@@ -67,77 +67,52 @@ export default function CreateWeddingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    <ScreenWrapper>
+      <CustomHeader title={t("add_new_wedding")} />
+
+      {/* Form Content */}
+      <ScrollView
+        style={styles.formContainer}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t("add_new_wedding")}</Text>
-          <View style={styles.placeholder} />
-        </View>
+        <CustomInput
+          label={t("groom_name")}
+          placeholder="Mirror"
+          value={groomName}
+          onChangeText={setGroomName}
+        />
 
-        {/* Form Content */}
-        <ScrollView
-          style={styles.formContainer}
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Groom's Name */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>{t("groom_name")}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Mirror"
-              placeholderTextColor="#999"
-              value={groomName}
-              onChangeText={setGroomName}
-            />
-          </View>
+        <CustomInput
+          label={t("bride_name")}
+          placeholder="Moon"
+          value={brideName}
+          onChangeText={setBrideName}
+        />
 
-          {/* Bride's Name */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>{t("bride_name")}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Moon"
-              placeholderTextColor="#999"
-              value={brideName}
-              onChangeText={setBrideName}
-            />
-          </View>
-
-          {/* Marriage Date */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>{t("marriage_date")}</Text>
-            <TouchableOpacity
-              style={styles.dateInputContainer}
-              onPress={handleDatePress}
-            >
-              <Text style={styles.dateInputText}>
-                {formatDate(marriageDate)}
-              </Text>
-              <Ionicons name="calendar-outline" size={20} color="#999" style={styles.calendarIcon} />
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-
-        {/* Save Button */}
-        <View style={styles.buttonContainer}>
+        {/* Marriage Date - Custom handled since it's a date picker */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>{t("marriage_date")}</Text>
           <TouchableOpacity
-            style={[styles.saveButton, isSaving && { opacity: 0.7 }]}
-            onPress={handleSave}
-            disabled={isSaving}
+            style={styles.dateInputContainer}
+            onPress={handleDatePress}
           >
-            <Text style={styles.saveButtonText}>{isSaving ? t("saving") : t("save")}</Text>
+            <Text style={styles.dateInputText}>
+              {formatDate(marriageDate)}
+            </Text>
+            <Ionicons name="calendar-outline" size={20} color="#999" style={styles.calendarIcon} />
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </ScrollView>
+
+      {/* Save Button */}
+      <View style={styles.buttonContainer}>
+        <CustomButton
+          title={isSaving ? t("saving") : t("save")}
+          onPress={handleSave}
+          loading={isSaving}
+        />
+      </View>
 
       {/* Date Picker Modal */}
       <Modal
@@ -162,62 +137,23 @@ export default function CreateWeddingScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "flex-start",
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#000",
-  },
-  placeholder: {
-    width: 40,
-  },
   formContainer: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 30,
   },
   inputGroup: {
-    marginBottom: 24,
+    marginBottom: 24, // Keep this for the date picker wrapper
   },
   label: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 8,
-  },
-  input: {
-    height: 55,
-    borderWidth: 1,
-    borderColor: "#E6E6E6",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: "#000",
-    backgroundColor: "#FFFFFF",
+    color: "#6F6F6F",
+    marginBottom: 6,
   },
   dateInputContainer: {
     flexDirection: "row",
@@ -227,7 +163,7 @@ const styles = StyleSheet.create({
     borderColor: "#E6E6E6",
     borderRadius: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F9F9F9", // Match CustomInput bg
   },
   dateInputText: {
     flex: 1,
@@ -243,18 +179,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     paddingTop: 20,
-  },
-  saveButton: {
-    backgroundColor: "#000",
-    height: 55,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  saveButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
