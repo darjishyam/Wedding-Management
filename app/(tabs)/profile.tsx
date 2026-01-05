@@ -9,7 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, reloadUser } = useAuth();
   const { resetOnboarding } = useOnboarding();
   const { language, setLanguage, t } = useLanguage();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
@@ -28,10 +28,49 @@ export default function ProfileScreen() {
       >
         {/* Profile Details */}
         <View style={styles.profileSection}>
-          <Image
-            source={require("../../assets/images/bride.jpg")}
-            style={styles.profileImage}
-          />
+          <TouchableOpacity onPress={async () => {
+            if (!user) return;
+            const { launchImageLibraryAsync, MediaTypeOptions } = require('expo-image-picker');
+            const result = await launchImageLibraryAsync({
+              mediaTypes: MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.5,
+              base64: true,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+              const uri = `data:image/jpeg;base64,${result.assets[0].base64}`;
+              try {
+                // Update User Profile
+                const api = require('@/services/api').default;
+                // We need an endpoint to update user. userController?
+                // Assuming POST /auth/update-profile or similar.
+                // Let's assume we can use the same update logic if we had one.
+                // I'll assume we can call a generic update.
+                // Actually, let's create a route for it if it doesn't exist, or just use a generic 'update' if available.
+                // I'll create a new function in authController called updateProfile.
+                await api.put('/auth/profile', { profileImage: uri });
+
+                // Reload user
+                await reloadUser();
+              } catch (e) {
+                console.error("Failed to update profile image", e);
+              }
+            }
+          }}>
+            <Image
+              source={
+                user?.profileImage
+                  ? { uri: user.profileImage }
+                  : require("../../assets/images/empty_guest.png")
+              }
+              style={styles.profileImage}
+            />
+            <View style={{ position: 'absolute', bottom: 0, right: 10, backgroundColor: '#000', borderRadius: 12, padding: 4 }}>
+              <Ionicons name="camera" size={12} color="#FFF" />
+            </View>
+          </TouchableOpacity>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user?.name || "Guest"}</Text>
             <Text style={styles.profileEmail}>{user?.email || "Sign in to save your data"}</Text>
@@ -159,6 +198,8 @@ export default function ProfileScreen() {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
           </TouchableOpacity>
+
+
         </View>
       </ScrollView>
 

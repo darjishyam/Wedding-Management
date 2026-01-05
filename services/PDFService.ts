@@ -159,5 +159,52 @@ export const PDFService = {
         </body>
       </html>
     `;
+  },
+
+  generateVendorReportHTML(vendors: any[]) {
+    const totalCost = vendors.reduce((sum, v) => sum + (v.totalAmount || 0), 0);
+    const totalPaid = vendors.reduce((sum, v) => sum + (v.paidAmount || 0), 0);
+    const rows = vendors.map(v => `
+        <tr>
+          <td>${v.name}</td>
+          <td>${v.category}</td>
+          <td>${v.totalAmount}</td>
+          <td>${v.paidAmount}</td>
+          <td>${v.status}</td>
+        </tr>
+      `).join('');
+
+    return `
+        <html>
+          <head>
+            <style>
+              body { font-family: 'Helvetica', sans-serif; padding: 20px; }
+              h1 { text-align: center; color: #E91E63; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f2f2f2; }
+              .summary { margin-top: 20px; font-weight: bold; }
+            </style>
+          </head>
+          <body>
+            <h1>Vendor Payment Report</h1>
+            <div class="summary">
+              <p>Total Estimated: ₹${totalCost}</p>
+              <p>Total Paid: ₹${totalPaid}</p>
+              <p>Pending: ₹${totalCost - totalPaid}</p>
+            </div>
+            <table>
+              <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th>Status</th>
+              </tr>
+              ${rows}
+            </table>
+          </body>
+        </html>
+      `;
   }
 };

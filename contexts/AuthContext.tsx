@@ -16,7 +16,7 @@ export function useAuth() {
     const { user, isLoading, isDemo } = useAppSelector(state => state.auth);
 
     const login = async (email: string, password: string) => {
-        await dispatch(loginAction({ email, password })).unwrap();
+        return await dispatch(loginAction({ email, password })).unwrap();
     };
 
     const register = async (name: string, email: string, mobile: string, password: string, firebaseVerified?: boolean) => {

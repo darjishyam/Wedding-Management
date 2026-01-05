@@ -8,15 +8,16 @@ interface StatBoxProps {
     icon?: keyof typeof Ionicons.glyphMap;
     imageSource?: ImageSourcePropType;
     style?: any; // For custom background color
+    imageStyle?: any; // For custom image styling (width, height, tint)
 }
 
-export default function StatBox({ label, value, icon, imageSource, style }: StatBoxProps) {
+export default function StatBox({ label, value, icon, imageSource, style, imageStyle }: StatBoxProps) {
     return (
         <View style={[styles.container, style]}>
             {imageSource ? (
                 <Image
                     source={imageSource}
-                    style={styles.imageIcon}
+                    style={[styles.imageIcon, imageStyle]}
                     resizeMode="contain"
                 />
             ) : (
@@ -42,9 +43,9 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     imageIcon: {
-        width: 36,
-        height: 36,
-        marginBottom: 4,
+        width: 54,
+        height: 54,
+        marginBottom: 8,
         tintColor: "#000",
     },
     label: {

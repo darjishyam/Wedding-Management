@@ -16,54 +16,13 @@ export default function PurchasePremiumScreen() {
 
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handlePurchase = async () => {
+  const handlePurchase = () => {
     if (!user) {
       Alert.alert("Login Required", "Please login to purchase premium.");
-      router.push("/login"); // Or however you navigate
+      router.push("/login");
       return;
     }
-
-    setIsProcessing(true);
-    try {
-      // Mocking payment delay
-      setTimeout(async () => {
-        // Here we would call the backend to upgrade
-
-        if (isDemo) {
-          console.log("DEMO MODE: Simulating Purchase Success");
-          Alert.alert("Success", "You are now a Premium Member! (Demo Mode)", [
-            { text: "OK", onPress: () => router.back() }
-          ]);
-          setIsProcessing(false);
-          return;
-        }
-
-        try {
-          // await authService.upgradeUser(); // Need to implement this
-          // For now, I will assume successful "payment" and call the upgrade endpoint 
-          // We need to import api not authService for backend calls if authService is only firebase.
-          // Looking at project structure, 'services/api.ts' is axios instance.
-
-          const response = await require("@/services/api").default.post('/auth/upgrade');
-
-          Alert.alert("Success", "You are now a Premium Member!", [
-            { text: "OK", onPress: () => router.back() }
-          ]);
-
-          if (reloadUser) {
-            await reloadUser();
-          }
-
-        } catch (err) {
-          Alert.alert("Error", "Upgrade failed. Please try again.");
-          console.error(err);
-        }
-        setIsProcessing(false);
-      }, 2000);
-    } catch (error) {
-      Alert.alert("Error", "Payment failed");
-      setIsProcessing(false);
-    }
+    router.push("/payment/mock-payment" as any);
   };
 
   const isPremium = user?.isPremium;

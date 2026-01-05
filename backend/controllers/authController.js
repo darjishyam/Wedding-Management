@@ -57,6 +57,7 @@ const registerUser = async (req, res) => {
                     mobile: user.mobile,
                     token: generateToken(user.id),
                     isPremium: user.isPremium,
+                    role: user.role,
                     message: 'User registered successfully via Firebase'
                 });
             }
@@ -176,6 +177,7 @@ const verifyOtp = async (req, res) => {
                 email: user.email,
                 token: generateToken(user.id),
                 isPremium: user.isPremium,
+                role: user.role,
             });
         }
 
@@ -194,6 +196,7 @@ const verifyOtp = async (req, res) => {
             email: user.email,
             token: generateToken(user.id),
             isPremium: user.isPremium,
+            role: user.role,
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -238,6 +241,8 @@ const loginUser = async (req, res) => {
                 email: user.email,
                 token: generateToken(user.id),
                 isPremium: user.isPremium,
+                profileImage: user.profileImage,
+                role: user.role,
             });
         } else {
             console.log('Login Failed: Password Mismatch');
@@ -246,6 +251,73 @@ const loginUser = async (req, res) => {
     } catch (error) {
         console.error('Login Error:', error);
         res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+};
+
+// @desc    Google Login
+// @route   POST /api/auth/google
+// @access  Public
+const googleLogin = async (req, res) => {
+    const { email, name, mobile, profileImage } = req.body;
+
+    try {
+        let user = await User.findOne({ email });
+
+        if (user) {
+            // User exists, log them in
+            console.log(`[Google Login] User found: ${email}`);
+
+            // Optional: Update profile image if missing
+            if (!user.profileImage && profileImage) {
+                user.profileImage = profileImage;
+                await user.save();
+            }
+
+            return res.json({
+                _id: user.id,
+                name: user.name,
+                email: user.email,
+                mobile: user.mobile,
+                token: generateToken(user.id),
+                isPremium: user.isPremium,
+                profileImage: user.profileImage,
+                role: user.role,
+            });
+        } else {
+            // Create new user
+            console.log(`[Google Login] Creating new user: ${email}`);
+
+            // Generate valid random password
+            const randomPassword = Math.random().toString(36).slice(-8) + 'Aa1!';
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(randomPassword, salt);
+
+            user = await User.create({
+                name: name || 'Google User',
+                email,
+                mobile: mobile || undefined, // undefined lets the sparse index work (no value)
+                password: hashedPassword,
+                isVerified: true, // Trusted provider
+                profileImage
+            });
+
+            return res.status(201).json({
+                _id: user.id,
+                name: user.name,
+                email: user.email,
+                mobile: user.mobile,
+                token: generateToken(user.id),
+                isPremium: user.isPremium,
+                profileImage: user.profileImage,
+                role: user.role,
+            });
+        }
+    } catch (error) {
+        console.error('[Google Login Error]:', error);
+        res.status(500).json({
+            message: error.message || 'Server error during Google Login',
+            details: error.toString()
+        });
     }
 };
 
@@ -297,6 +369,8 @@ const getMe = async (req, res) => {
                 email: user.email,
                 mobile: user.mobile,
                 isPremium: user.isPremium,
+                role: user.role,
+                profileImage: user.profileImage,
                 // Add any other fields needed
             });
         } else {
@@ -307,4 +381,33 @@ const getMe = async (req, res) => {
     }
 };
 
-module.exports = { registerUser, loginUser, verifyOtp, deleteAccount, upgradeToPremium, getMe };
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateProfile = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { profileImage, name, email } = req.body;
+
+        const updates = {};
+        if (profileImage !== undefined) updates.profileImage = profileImage;
+        if (name) updates.name = name;
+        // Email update might require verification, skipping for now or allow if not strict.
+
+        const user = await User.findByIdAndUpdate(userId, updates, { new: true }).select('-password');
+
+        res.json({
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+            mobile: user.mobile,
+            isPremium: user.isPremium,
+            profileImage: user.profileImage,
+            role: user.role,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { registerUser, loginUser, verifyOtp, deleteAccount, upgradeToPremium, getMe, updateProfile, googleLogin };

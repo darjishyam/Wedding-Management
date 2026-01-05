@@ -1,0 +1,7 @@
+# Verification
+Attempt to delete an event from the UI.
+If it fails, look at the server logs (user needs to provide them or check them).
+Since I cannot see the user's terminal, I will ask them to try and report back, or I can try to trigger it via script.
+I will create a script `verify-delete.js` in backend that logs in and deletes an event.
+But I need a valid event ID.
+I'll create a script that lists events first.

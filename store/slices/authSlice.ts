@@ -9,6 +9,8 @@ export interface User {
     email: string;
     mobile: string;
     isPremium?: boolean;
+    role?: 'user' | 'admin';
+    profileImage?: string;
 }
 
 interface AuthState {
@@ -141,12 +143,23 @@ export const signInWithGoogle = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const result = await authService.signInWithGoogle();
-            if (result && result.token) {
-                await AsyncStorage.setItem('userToken', result.token);
-                await AsyncStorage.setItem('userInfo', JSON.stringify(result.user));
-                return result.user;
+            if (result && result.user) {
+                // Now exchange this for our backend token
+                const { email, displayName, phoneNumber, photoURL } = result.user;
+
+                const response = await api.post('/auth/google', {
+                    email,
+                    name: displayName,
+                    mobile: phoneNumber,
+                    profileImage: photoURL
+                });
+
+                const { token, ...userData } = response.data;
+                await AsyncStorage.setItem('userToken', token);
+                await AsyncStorage.setItem('userInfo', JSON.stringify(userData));
+                return userData;
             }
-            return rejectWithValue('Google Sign In failed');
+            return rejectWithValue('Google Sign In failed: No user data');
         } catch (error: any) {
             return rejectWithValue(error.message || 'Google Sign In failed');
         }

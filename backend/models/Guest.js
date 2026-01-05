@@ -19,6 +19,20 @@ const guestSchema = new mongoose.Schema({
         required: true,
         default: 1,
     },
+    category: {
+        type: String,
+        enum: ['Groom Family', 'Bride Family', 'Friend', 'Work', 'Other'],
+        default: 'Other',
+    },
+    status: {
+        type: String,
+        enum: ['Not Invited', 'Invited', 'Confirmed', 'Declined'],
+        default: 'Not Invited',
+    },
+    assignedEvents: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Event'
+    }],
     isInvited: {
         type: Boolean,
         default: false,

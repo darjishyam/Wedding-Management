@@ -3,6 +3,7 @@ import CustomHeader from "@/components/CustomHeader";
 import CustomInput from "@/components/CustomInput";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { useAuth } from "@/contexts/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -24,8 +25,14 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      await login(email, password);
-      router.replace("/(tabs)");
+      const userData = await login(email, password);
+      // Check role directly from response or user object
+      if (userData?.role === 'admin') {
+        // Use 'as any' to avoid router type errors if admin routes aren't typed
+        router.replace("/admin/dashboard" as any);
+      } else {
+        router.replace("/(tabs)");
+      }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || "Invalid credentials";
       Alert.alert("Login Failed", errorMessage);
@@ -72,6 +79,14 @@ export default function LoginScreen() {
           rightIcon={showPassword ? "eye-off" : "eye"}
           style={{ marginBottom: 4 }}
         />
+
+        {/* Admin Toggle (Visual only, Logic handles redirection based on DB role) */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+          <Ionicons name="shield-checkmark-outline" size={20} color="#666" style={{ marginRight: 8 }} />
+          <Text style={{ fontSize: 14, color: '#666' }}>
+            Admin account? Just log in normally.
+          </Text>
+        </View>
 
         {/* Forgot Password */}
         <TouchableOpacity style={styles.forgotPassword}>

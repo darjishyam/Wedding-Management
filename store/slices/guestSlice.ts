@@ -6,6 +6,8 @@ export interface Guest {
     name: string;
     familyCount: number;
     cityVillage: string;
+    category?: string;
+    status?: string;
     isInvited?: boolean;
 }
 
@@ -15,18 +17,12 @@ interface GuestState {
     error: string | null;
 }
 
-const initialState: GuestState = {
-    guests: [],
-    isLoading: false,
-    error: null,
-};
-
-// Async Thunks
+// ... (GuestState remains same)
 
 export const fetchGuests = createAsyncThunk('guest/fetchGuests', async (_, { rejectWithValue }) => {
     try {
         const response = await api.get('/guests');
-        return response.data;
+        return response.data; // Expected to contain new fields now
     } catch (error: any) {
         return rejectWithValue(error.response?.data?.message || 'Failed to fetch guests');
     }
@@ -35,7 +31,7 @@ export const fetchGuests = createAsyncThunk('guest/fetchGuests', async (_, { rej
 export const addGuest = createAsyncThunk(
     'guest/addGuest',
     async (
-        { name, count, city }: { name: string; count: number; city: string },
+        { name, count, city, category, status }: { name: string; count: number; city: string; category?: string; status?: string },
         { rejectWithValue }
     ) => {
         try {
@@ -43,6 +39,8 @@ export const addGuest = createAsyncThunk(
                 name,
                 familyCount: count,
                 cityVillage: city,
+                category,
+                status
             });
             return response.data;
         } catch (error: any) {
@@ -54,17 +52,26 @@ export const addGuest = createAsyncThunk(
 export const updateGuestStatus = createAsyncThunk(
     'guest/updateGuestStatus',
     async (
-        { id, isInvited }: { id: string; isInvited: boolean },
+        { id, isInvited, status }: { id: string; isInvited?: boolean; status?: string },
         { rejectWithValue }
     ) => {
         try {
-            const response = await api.put(`/guests/${id}`, { isInvited });
+            const payload: any = {};
+            if (isInvited !== undefined) payload.isInvited = isInvited;
+            if (status !== undefined) payload.status = status;
+
+            const response = await api.put(`/guests/${id}`, payload);
             return response.data;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || 'Failed to update guest status');
         }
     }
 );
+const initialState: GuestState = {
+    guests: [],
+    isLoading: false,
+    error: null,
+};
 
 const guestSlice = createSlice({
     name: 'guest',
@@ -107,7 +114,7 @@ const guestSlice = createSlice({
             })
             // Update Guest Status
             .addCase(updateGuestStatus.fulfilled, (state, action) => {
-                const index = state.guests.findIndex((g) => g._id === action.payload._id);
+                const index = state.guests.findIndex((g: Guest) => g._id === action.payload._id);
                 if (index !== -1) {
                     state.guests[index] = action.payload;
                 }

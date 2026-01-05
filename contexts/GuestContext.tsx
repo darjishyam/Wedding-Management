@@ -28,12 +28,12 @@ export function useGuest() {
         await dispatch(fetchGuestsAction());
     };
 
-    const addGuest = async (name: string, count: number, city: string) => {
-        await dispatch(addGuestAction({ name, count, city })).unwrap();
+    const addGuest = async (name: string, count: number, city: string, category?: string, status?: string) => {
+        await dispatch(addGuestAction({ name, count, city, category, status })).unwrap();
     };
 
-    const updateGuestStatus = async (id: string, isInvited: boolean) => {
-        await dispatch(updateGuestStatusAction({ id, isInvited }));
+    const updateGuestStatus = async (id: string, isInvited?: boolean, status?: string) => {
+        await dispatch(updateGuestStatusAction({ id, isInvited, status }));
     };
 
     return {

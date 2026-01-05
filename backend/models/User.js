@@ -20,8 +20,9 @@ const userSchema = new mongoose.Schema({
     },
     mobile: {
         type: String,
-        required: true,
+        required: false,
         unique: true,
+        sparse: true,
     },
     otp: String,
     otpExpires: Date,
@@ -29,9 +30,18 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user',
+    },
     isPremium: {
         type: Boolean,
         default: false,
+    },
+    profileImage: {
+        type: String, // URL or Base64
+        default: "",
     },
 });
 

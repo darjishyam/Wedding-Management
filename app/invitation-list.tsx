@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -7,12 +7,23 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGuest } from "@/contexts/GuestContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PDFService } from "@/services/PDFService";
+import { useState } from "react";
 
 export default function InvitationListScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { user } = useAuth();
+
+  const handleBack = () => {
+    if (navigation.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
   const { guests, isLoading, updateGuestStatus } = useGuest();
   const { t } = useLanguage();
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   const handleAddGuest = () => {
     if (!user) {
@@ -51,7 +62,7 @@ export default function InvitationListScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.navBar}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
           <Text style={styles.navTitle}>{t("invitation_list")}</Text>
@@ -73,13 +84,21 @@ export default function InvitationListScreen() {
     );
   }
 
+
+  const filteredGuests = guests.filter(guest => {
+    if (selectedCategory === "All") return true;
+    return guest.category === selectedCategory;
+  });
+
+  // ... (handleAddGuest and handleExportPDF remain same)
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.navBar}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>{t("invitation_list")} ({guests.length})</Text>
+        <Text style={styles.navTitle}>{t("invitation_list")} ({filteredGuests.length})</Text>
         <TouchableOpacity style={styles.addButtonSmall} onPress={handleAddGuest}>
           <Ionicons name="add" size={24} color="#000" />
         </TouchableOpacity>
@@ -88,22 +107,55 @@ export default function InvitationListScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Category Filter */}
+      <View style={{ height: 60 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, alignItems: 'center', gap: 8 }}>
+          {['All', 'Groom Family', 'Bride Family', 'Friend', 'Work', 'Other'].map((cat) => (
+            <TouchableOpacity
+              key={cat}
+              style={[
+                styles.filterChip,
+                selectedCategory === cat && styles.filterChipSelected
+              ]}
+              onPress={() => setSelectedCategory(cat)}
+            >
+              <Text style={[styles.filterChipText, selectedCategory === cat && styles.filterChipTextSelected]}>{cat}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       <ScrollView contentContainerStyle={styles.listContent}>
-        {guests.map((guest, index) => (
+        {filteredGuests.map((guest, index) => (
           <View key={guest._id || index} style={styles.guestCard}>
             <View style={styles.guestInfo}>
-              <Text style={styles.guestName}>{guest.name}</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Text style={styles.guestName}>{guest.name}</Text>
+                <Text style={styles.categoryBadge}>{guest.category || 'Other'}</Text>
+              </View>
               <Text style={styles.guestDetails}>{guest.cityVillage} • {guest.familyCount} Family Members</Text>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                <Text style={[styles.statusText, { color: guest.status === 'Invited' || guest.status === 'Confirmed' ? 'green' : '#666' }]}>
+                  {guest.status || 'Not Invited'}
+                </Text>
+
+                {/* Invite Action Button */}
+                {guest.status !== 'Invited' && guest.status !== 'Confirmed' ? (
+                  <TouchableOpacity
+                    style={styles.inviteBtn}
+                    onPress={() => updateGuestStatus(guest._id, true, 'Invited')}
+                  >
+                    <Text style={styles.inviteBtnText}>Send Invite</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Ionicons name="checkmark-done" size={16} color="green" />
+                    <Text style={{ color: 'green', fontSize: 12, marginLeft: 4 }}>Sent</Text>
+                  </View>
+                )}
+              </View>
             </View>
-            {/* Invite Status Toggle */}
-            <TouchableOpacity
-              style={[styles.inviteStatus, guest.isInvited && styles.inviteStatusSent]}
-              onPress={() => updateGuestStatus(guest._id, !guest.isInvited)}
-            >
-              <Text style={[styles.inviteText, guest.isInvited && styles.inviteTextSent]}>
-                {guest.isInvited ? t("sent") || "Sent" : t("pending") || "Pending"}
-              </Text>
-            </TouchableOpacity>
           </View>
         ))}
       </ScrollView>
@@ -132,7 +184,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
-    marginLeft: -8,
+    marginRight: 8,
   },
   navTitle: {
     fontSize: 18,
@@ -247,5 +299,48 @@ const styles = StyleSheet.create({
     color: "#4CAF50",
     fontWeight: "600",
   },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: '#F0F0F0',
+    marginRight: 8,
+  },
+  filterChipSelected: {
+    backgroundColor: '#000',
+  },
+  filterChipText: {
+    fontSize: 13,
+    color: '#666',
+  },
+  filterChipTextSelected: {
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  categoryBadge: {
+    fontSize: 10,
+    backgroundColor: '#E3F2FD',
+    color: '#1565C0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginLeft: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500'
+  },
+  inviteBtn: {
+    backgroundColor: '#000',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  inviteBtnText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600'
+  }
 });
 

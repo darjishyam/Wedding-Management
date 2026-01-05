@@ -15,12 +15,16 @@ export default function AddGuestScreen() {
   const [name, setName] = useState("");
   const [totalFamilyCount, setTotalFamilyCount] = useState("");
   const [cityVillage, setCityVillage] = useState("");
+  const [category, setCategory] = useState("Other");
+  const [status, setStatus] = useState("Not Invited");
   const [loading, setLoading] = useState(false);
 
   const resetForm = () => {
     setName("");
     setTotalFamilyCount("");
     setCityVillage("");
+    setCategory("Other");
+    setStatus("Not Invited");
   };
 
   const handleSaveCommon = async (shouldGoBack: boolean) => {
@@ -31,7 +35,7 @@ export default function AddGuestScreen() {
 
     setLoading(true);
     try {
-      await addGuest(name, parseInt(totalFamilyCount), cityVillage);
+      await addGuest(name, parseInt(totalFamilyCount), cityVillage, category, status);
       Alert.alert(t("success"), t("guest_added_success"));
       if (shouldGoBack) {
         // Redirect to Home Page as requested
@@ -111,6 +115,44 @@ export default function AddGuestScreen() {
               placeholder="Surat"
               placeholderTextColor="#999"
             />
+          </View>
+
+          {/* Category Selection */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Category</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
+              {['Groom Family', 'Bride Family', 'Friend', 'Work', 'Other'].map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.chip,
+                    category === cat && styles.chipSelected
+                  ]}
+                  onPress={() => setCategory(cat)}
+                >
+                  <Text style={[styles.chipText, category === cat && styles.chipTextSelected]}>{cat}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Status Selection */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Invitation Status</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              {['Not Invited', 'Invited', 'Confirmed', 'Declined'].map((stat) => (
+                <TouchableOpacity
+                  key={stat}
+                  style={[
+                    styles.chip,
+                    status === stat && styles.chipSelected
+                  ]}
+                  onPress={() => setStatus(stat)}
+                >
+                  <Text style={[styles.chipText, status === stat && styles.chipTextSelected]}>{stat}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </ScrollView>
 
@@ -223,6 +265,26 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#EEE',
+  },
+  chipSelected: {
+    backgroundColor: '#FFF0F5',
+    borderColor: '#E40046',
+  },
+  chipText: {
+    color: '#666',
+    fontSize: 14,
+  },
+  chipTextSelected: {
+    color: '#E40046',
+    fontWeight: 'bold',
   },
 });
 

@@ -52,7 +52,11 @@ export function useWedding() {
     refreshWeddingData,
     switchWedding,
     updateBudget,
-    createWedding
+    createWedding,
+    updateWedding: async (id: string, data: any) => {
+      const { updateWedding: updateAction } = require('../store/slices/weddingSlice');
+      await dispatch(updateAction({ id, ...data })).unwrap();
+    }
   };
 }
 

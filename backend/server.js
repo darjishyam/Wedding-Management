@@ -26,6 +26,13 @@ app.use('/api/weddings', require('./routes/weddingRoutes'));
 app.use('/api/guests', require('./routes/guestRoutes'));
 app.use('/api/expenses', require('./routes/expenseRoutes'));
 app.use('/api/shagun', require('./routes/shagunRoutes'));
+app.use('/api/packages', require('./routes/packageRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
+app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/vendors', require('./routes/vendorRoutes'));
+app.use('/api/payment', require('./routes/paymentRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 // Basic Route
 app.get('/', (req, res) => {
@@ -47,8 +54,4 @@ app.listen(PORT, () => {
 process.on('unhandledRejection', (err) => {
     console.error('Unhandled Rejection:', err);
     // process.exit(1); // Don't crash for now, let it retry
-});
-
-process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
 });

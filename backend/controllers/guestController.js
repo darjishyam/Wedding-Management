@@ -5,7 +5,7 @@ const Wedding = require('../models/Wedding');
 // @route   POST /api/guests
 // @access  Private
 const addGuest = async (req, res) => {
-    const { name, cityVillage, familyCount } = req.body;
+    const { name, cityVillage, familyCount, category, status } = req.body;
 
     try {
         const wedding = await Wedding.findOne({ user: req.user._id });
@@ -18,6 +18,8 @@ const addGuest = async (req, res) => {
             name,
             cityVillage,
             familyCount,
+            category: category || 'Other',
+            status: status || 'Not Invited',
         });
 
         res.status(201).json(guest);

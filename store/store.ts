@@ -5,6 +5,7 @@ import guestReducer from './slices/guestSlice';
 import languageReducer from './slices/languageSlice';
 import onboardingReducer from './slices/onboardingSlice';
 import shagunReducer from './slices/shagunSlice';
+import vendorReducer from './slices/vendorSlice';
 import weddingReducer from './slices/weddingSlice';
 
 // We will add reducers here as we create slices
@@ -17,6 +18,7 @@ export const store = configureStore({
         expense: expenseReducer,
         language: languageReducer,
         onboarding: onboardingReducer,
+        vendor: vendorReducer,
     },
 });
 

@@ -11,7 +11,7 @@ import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 
 export default function SignupScreen() {
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, signInWithGoogle } = useAuth();
   const { t } = useLanguage();
 
   const [name, setName] = useState("");
@@ -86,7 +86,17 @@ export default function SignupScreen() {
   };
 
   const handleGoogleLogin = async () => {
-    showAlert("Coming Soon", "Google Sign-In will be available soon!");
+    try {
+      setLoading(true);
+      await signInWithGoogle();
+      router.replace("/(tabs)");
+      // But let's assume AuthContext updates user state and redirects.
+    } catch (error: any) {
+      console.error("Google Sign-In Error:", error);
+      showAlert("Google Login Failed", error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

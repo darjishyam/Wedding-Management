@@ -11,6 +11,11 @@ export interface Wedding {
         guestCount: number;
         totalSpent: number;
     };
+    groomImage?: string;
+    brideImage?: string;
+    location?: string;
+    type?: string;
+    venue?: string;
 }
 
 interface WeddingState {
@@ -76,6 +81,15 @@ export const updateBudget = createAsyncThunk('wedding/updateBudget', async ({ id
     }
 });
 
+export const updateWedding = createAsyncThunk('wedding/update', async ({ id, ...data }: { id: string } & Partial<Wedding>, { rejectWithValue }) => {
+    try {
+        const response = await api.put(`/weddings/${id}`, data);
+        return response.data;
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to update wedding');
+    }
+});
+
 export const createWedding = createAsyncThunk('wedding/create', async (data: Partial<Wedding>, { dispatch, rejectWithValue }) => {
     try {
         const response = await api.post('/weddings', data);
@@ -138,6 +152,10 @@ const weddingSlice = createSlice({
                 if (state.weddingData && state.weddingData._id === action.payload._id) {
                     state.weddingData.totalBudget = action.payload.totalBudget;
                 }
+            })
+            // Update Wedding
+            .addCase(updateWedding.fulfilled, (state, action) => {
+                state.weddingData = action.payload;
             })
             // Create Wedding
             .addCase(createWedding.pending, (state) => {
