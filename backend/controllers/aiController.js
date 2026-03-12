@@ -1,6 +1,7 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Wedding = require('../models/Wedding');
 const Expense = require('../models/Expense');
+const Event = require('../models/Event');
 const axios = require('axios');
 
 // Initialize Gemini
@@ -166,8 +167,6 @@ const generatePackageDescription = async (req, res) => {
 
 const ChatHistory = require('../models/ChatHistory');
 
-// ... existing code ...
-
 const chatWithAI = async (req, res) => {
     try {
         const { message, weddingId } = req.body;
@@ -176,16 +175,10 @@ const chatWithAI = async (req, res) => {
             throw new Error("GEMINI_API_KEY is missing");
         }
 
-        // Save User Message
-        // We might not have userId directly in body, but can get from req.user if protected. 
-        // For now, assume protected route or just store weddingId.
-        // Ideally this route should be protected.
-
         await ChatHistory.create({
             wedding: weddingId,
             sender: 'user',
             message: message,
-            // user: req.user?._id // If available
         });
 
         // Fetch Context
@@ -196,6 +189,10 @@ const chatWithAI = async (req, res) => {
             const expenses = await Expense.find({ wedding: weddingId });
             const totalSpent = expenses.reduce((sum, item) => sum + (item.amount || 0), 0);
 
+            // Fetch Events
+            const eventList = await Event.find({ wedding: weddingId }).sort({ date: 1 });
+            const eventContext = eventList.map(e => `- ${e.name} on ${new Date(e.date).toDateString()} at ${e.time || 'Time TBD'}`).join('\n');
+
             context = `
             Context: Indian Wedding Planning.
             Wedding Details:
@@ -204,6 +201,9 @@ const chatWithAI = async (req, res) => {
             - Location: ${wedding.location}
             - Type: ${wedding.type}
             - Budget: ₹${wedding.totalBudget} (Spent: ₹${totalSpent})
+            
+            Current Event Schedule:
+            ${eventContext || "No events planned yet."}
             `;
         }
 
@@ -246,4 +246,80 @@ const getChatHistory = async (req, res) => {
     }
 };
 
-module.exports = { getWeddingAdvice, generatePackageDescription, chatWithAI, getChatHistory };
+const generateTimeline = async (req, res) => {
+    console.log("AI Timeline Generation Request");
+    try {
+        if (!process.env.GEMINI_API_KEY) {
+            throw new Error("GEMINI_API_KEY is missing");
+        }
+
+        const { date, daysCount = 3, type = "Indian" } = req.body;
+        const weddingDate = new Date(date);
+
+        const prompt = `
+        Act as an expert Indian Wedding Scheduler.
+        The wedding is on: ${weddingDate.toDateString()} (${type} style).
+        
+        Generate a detailed ${daysCount}-day timeline leading up to the wedding.
+        Include traditional events like Haldi, Mehendi, Sangeet/Garba, Mandap Muhurat, and the Wedding Ceremony itself.
+        
+        Rules:
+        1. Haldi: Usually Morning, 1 day before wedding.
+        2. Mehendi: Afternoon/Evening, 1-2 days before.
+        3. Sangeet/Garba: Night, 1 day before.
+        4. Mandap Muhurat / Grah Shanti: Morning, 1 day before OR same day early morning.
+        5. Wedding: The main event.
+
+        Output strictly valid JSON array format WITHOUT markdown blocks. 
+        Each object must have:
+        - "name" (Event Title)
+        - "date" (ISO String YYYY-MM-DD)
+        - "time" (e.g. "10:00 AM")
+        - "venue" (Generic suggestion like "Home", "Banquet Hall")
+        - "description" (Short 1-line description)
+
+        Example structure:
+        [
+            {"name": "Haldi Ceremony", "date": "2024-01-01", "time": "10:00 AM", "venue": "Home Courtyard", "description": "Applying turmeric paste."}
+        ]
+        `;
+
+        const text = await generateWithFallback(prompt, "AI Timeline");
+
+        // Clean up markdown code blocks if present
+        const jsonString = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const events = JSON.parse(jsonString);
+
+        res.json({ timeline: events });
+
+    } catch (error) {
+        console.error("AI Timeline Error:", error);
+        res.status(500).json({ message: "Failed to generate timeline", error: error.message });
+    }
+};
+
+const askAI = async (req, res) => {
+    try {
+        const { prompt, context } = req.body;
+
+        if (!process.env.GEMINI_API_KEY) {
+            throw new Error("GEMINI_API_KEY is missing");
+        }
+
+        const fullPrompt = `
+        Context: ${context || "General"}
+        request: ${prompt}
+        
+        Keep it concise and creative.
+        `;
+
+        const text = await generateWithFallback(fullPrompt, "AI Ask");
+        res.json({ response: text });
+
+    } catch (error) {
+        console.error("AI Ask Error:", error);
+        res.status(500).json({ message: "Failed to generate response", error: error.message });
+    }
+};
+
+module.exports = { getWeddingAdvice, generatePackageDescription, chatWithAI, getChatHistory, generateTimeline, askAI };

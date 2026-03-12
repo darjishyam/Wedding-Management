@@ -5,6 +5,7 @@ const weddingSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
+        index: true,
     },
     groomName: {
         type: String,
@@ -40,34 +41,6 @@ const weddingSchema = new mongoose.Schema({
     venue: {
         type: String,
     },
-    catering: {
-        type: Number, // Cost
-        default: 0,
-    },
-    decoration: {
-        type: Number, // Cost
-        default: 0,
-    },
-    stay: {
-        type: Number, // Cost
-        default: 0,
-    },
-    photography: {
-        type: Number,
-        default: 0,
-    },
-    travel: {
-        type: Number,
-        default: 0,
-    },
-    makeup: {
-        type: Number,
-        default: 0,
-    },
-    otherExpenses: {
-        type: Number,
-        default: 0,
-    },
     events: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Event'
@@ -86,6 +59,16 @@ const weddingSchema = new mongoose.Schema({
     },
     marketType: {
         type: String, // Home/Out/Local
+    },
+    // Budget Planning Breakdown (Normalized)
+    budgetBreakdown: {
+        catering: { type: Number, default: 0 },
+        decoration: { type: Number, default: 0 },
+        venue: { type: Number, default: 0 },
+        photography: { type: Number, default: 0 },
+        travel: { type: Number, default: 0 },
+        makeup: { type: Number, default: 0 },
+        otherExpenses: { type: Number, default: 0 },
     },
     weddingSide: {
         type: String, // Bride/Groom

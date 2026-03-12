@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagram View</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</head>
+<body style="background-color: white;">
+    <div class="mermaid">
+useCaseDiagram
+    left to right direction
+    actor "User\n(Groom/Bride/Planner)" as User
+    actor "AI Service\n(Gemini)" as AI
+    actor "Payment Gateway\n(Mock/External)" as PG
+
+    package "Wedding Management App" {
+        
+        %% Authentication & Profile
+        usecase "Login / Signup" as UC1
+        usecase "Manage Wedding Profile" as UC2
+        
+        %% Dashboard
+        usecase "View Dashboard Stats" as UC3
+
+        %% Guest Management
+        usecase "Manage Guest List" as UC4
+        usecase "Send Digital Invitations" as UC5
+        usecase "Track RSVP Status" as UC6
+
+        %% Vendor Management
+        usecase "Manage Vendors" as UC7
+        usecase "Add Vendor Payment" as UC8
+        usecase "View Payment History" as UC9
+
+        %% Financials
+        usecase "Manage Expenses" as UC10
+        usecase "Track Shagun (Gifts)" as UC11
+        usecase "Export PDF Reports" as UC12
+
+        %% Event Planning
+        usecase "Manage Wedding Events" as UC13
+        usecase "Auto-Generate Timeline" as UC14
+        usecase "Chat with AI Advisor" as UC15
+    }
+
+    %% User Relations
+    User --> UC1
+    User --> UC2
+    User --> UC3
+    User --> UC4
+    User --> UC7
+    User --> UC10
+    User --> UC11
+    User --> UC13
+    User --> UC15
+
+    %% Internal Include/Extend Relations
+    UC4 ..> UC5 : <<extend>>
+    UC4 ..> UC6 : <<include>>
+    UC7 ..> UC8 : <<include>>
+    UC8 ..> UC9 : <<include>>
+    UC14 ..> UC13 : <<extend>>
+    
+    %% External System Relations
+    UC14 <-- AI : Generates
+    UC15 <-- AI : Responds
+    UC12 <-- PG : Premium Check
+    </div>
+</body>
+</html>

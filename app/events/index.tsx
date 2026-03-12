@@ -8,8 +8,10 @@ import {
     ActivityIndicator,
     Alert,
     FlatList,
+    Modal,
     Platform,
     RefreshControl,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -17,17 +19,28 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useGuest } from "@/contexts/GuestContext";
+import { PDFService } from "@/services/PDFService";
+
 export default function EventsScreen() {
     const router = useRouter();
     const { weddingData } = useWedding();
+    const { guests, fetchGuests } = useGuest(); // Use Guest Context
     const { t } = useLanguage();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
+    // AI Modal State
+    const [aiModalVisible, setAiModalVisible] = useState(false);
+    const [generating, setGenerating] = useState(false);
+    const [suggestedEvents, setSuggestedEvents] = useState<any[]>([]);
+    const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+
     useFocusEffect(
         useCallback(() => {
             fetchEvents();
+            fetchGuests(); // Ensure guests are loaded
         }, [weddingData])
     );
 
@@ -42,6 +55,31 @@ export default function EventsScreen() {
             setLoading(false);
             setRefreshing(false);
         }
+    };
+
+    const handleExportPDF = async (event: any) => {
+        if (!guests || guests.length === 0) {
+            Alert.alert("Info", "No guests loaded or guests list is empty.");
+            return;
+        }
+
+        // Filter guests assigned to this event
+        const eventGuests = guests.filter(g =>
+            g.assignedEvents && g.assignedEvents.some((ae: any) => {
+                const eventId = typeof ae === 'string' ? ae : ae.event;
+                return eventId === event._id;
+            })
+        );
+
+        if (eventGuests.length === 0) {
+            Alert.alert("Info", "No guests invited to this event yet.");
+            // We can still proceed if user wants empty list, but alert is good.
+            // Let's proceed to allow exporting event details alone? 
+            // Better to ask. For now just proceed.
+        }
+
+        const html = PDFService.generateEventPDFHTML(event, eventGuests);
+        await PDFService.generateAndSharePDF(html, `${event.name}_List`);
     };
 
     const onRefresh = () => {
@@ -80,6 +118,65 @@ export default function EventsScreen() {
         }
     };
 
+    const generateAiTimeline = async () => {
+        if (!weddingData?.date) {
+            Alert.alert("Date Required", "Please set a wedding date in Profile first.");
+            return;
+        }
+        setAiModalVisible(true);
+        setGenerating(true);
+        try {
+            const res = await api.post('/ai/timeline', {
+                date: weddingData.date,
+                daysCount: 3,
+                type: weddingData.type || "Indian"
+            });
+            setSuggestedEvents(res.data.timeline || []);
+            setSelectedIndices(res.data.timeline ? res.data.timeline.map((_: any, i: number) => i) : []);
+        } catch (error: any) {
+            Alert.alert("AI Error", "Failed to generate timeline. Try again.");
+            setAiModalVisible(false);
+        } finally {
+            setGenerating(false);
+        }
+    };
+
+    const saveSuggestedEvents = async () => {
+        const eventsToSave = suggestedEvents.filter((_, i) => selectedIndices.includes(i));
+        if (eventsToSave.length === 0) return;
+
+        setGenerating(true); // Re-use spinner
+        try {
+            // Batch creation (using Promise.all for simplicity)
+            await Promise.all(eventsToSave.map(ev =>
+                api.post('/events', {
+                    weddingId: weddingData._id,
+                    name: ev.name,
+                    date: ev.date,
+                    time: ev.time,
+                    venue: ev.venue,
+                    description: ev.description
+                })
+            ));
+
+            setAiModalVisible(false);
+            fetchEvents(); // Refresh list
+            Alert.alert("Success", `${eventsToSave.length} events added to your schedule!`);
+        } catch (error) {
+            Alert.alert("Error", "Failed to save some events.");
+        } finally {
+            setGenerating(false);
+        }
+    };
+
+    const toggleSelection = (index: number) => {
+        if (selectedIndices.includes(index)) {
+            setSelectedIndices(selectedIndices.filter(i => i !== index));
+        } else {
+            setSelectedIndices([...selectedIndices, index]);
+        }
+    };
+
     const renderEventItem = ({ item }: { item: any }) => (
         <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -98,12 +195,21 @@ export default function EventsScreen() {
                         <Ionicons name="location-outline" size={14} /> {item.venue || "Venue not set"}
                     </Text>
                 </View>
-                <TouchableOpacity
-                    onPress={() => handleDelete(item._id, item.name)}
-                    style={styles.deleteButton}
-                >
-                    <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
-                </TouchableOpacity>
+
+                <View style={{ flexDirection: 'column', gap: 8 }}>
+                    <TouchableOpacity
+                        onPress={() => handleExportPDF(item)}
+                        style={[styles.actionButton, { backgroundColor: '#E3F2FD' }]}
+                    >
+                        <Ionicons name="document-text-outline" size={20} color="#1976D2" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => handleDelete(item._id, item.name)}
+                        style={[styles.actionButton, { backgroundColor: '#FFEBEE' }]}
+                    >
+                        <Ionicons name="trash-outline" size={20} color="#D32F2F" />
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );
@@ -140,11 +246,81 @@ export default function EventsScreen() {
             }
 
             <TouchableOpacity
+                style={styles.aiButton}
+                onPress={generateAiTimeline}
+            >
+                <Ionicons name="sparkles" size={24} color="#FFF" />
+                <Text style={styles.aiButtonText}>AI Auto-Schedule</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
                 style={styles.fab}
                 onPress={() => router.push("/events/add-event" as any)}
             >
                 <Ionicons name="add" size={30} color="#FFF" />
             </TouchableOpacity>
+
+            {/* AI Suggestion Modal */}
+            <Modal
+                visible={aiModalVisible}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setAiModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>✨ AI Suggestions</Text>
+                        <TouchableOpacity onPress={() => setAiModalVisible(false)}>
+                            <Ionicons name="close" size={24} color="#000" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {generating && suggestedEvents.length === 0 ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#E40046" />
+                            <Text style={styles.loadingText}>Analyzing wedding date...</Text>
+                            <Text style={styles.loadingSubText}>Consulting timelines for {weddingData?.type} Wedding</Text>
+                        </View>
+                    ) : (
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.modalSubtitle}>Select events to add to your calendar:</Text>
+                            <ScrollView contentContainerStyle={styles.suggestionList}>
+                                {suggestedEvents.map((ev, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={[styles.suggestionCard, selectedIndices.includes(index) && styles.selectedCard]}
+                                        onPress={() => toggleSelection(index)}
+                                    >
+                                        <View style={styles.suggestionHeader}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Ionicons
+                                                    name={selectedIndices.includes(index) ? "checkbox" : "square-outline"}
+                                                    size={24}
+                                                    color={selectedIndices.includes(index) ? "#E40046" : "#CCC"}
+                                                />
+                                                <Text style={styles.suggestionName}>{ev.name}</Text>
+                                            </View>
+                                            <Text style={styles.suggestionDate}>{new Date(ev.date).toDateString()}</Text>
+                                        </View>
+                                        <Text style={styles.suggestionDesc}>{ev.description}</Text>
+                                        <Text style={styles.suggestionTime}><Ionicons name="time" /> {ev.time} at {ev.venue}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+
+                            <View style={styles.modalFooter}>
+                                <TouchableOpacity
+                                    style={[styles.saveButton, { opacity: generating ? 0.7 : 1 }]}
+                                    onPress={saveSuggestedEvents}
+                                    disabled={generating}
+                                >
+                                    {generating ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveButtonText}>Add {selectedIndices.length} Events</Text>}
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
+                </View>
+            </Modal>
         </SafeAreaView >
     );
 }
@@ -189,6 +365,7 @@ const styles = StyleSheet.create({
     eventTime: { fontSize: 14, color: "#666", marginBottom: 2 },
     eventVenue: { fontSize: 14, color: "#666" },
     deleteButton: { padding: 8 },
+    actionButton: { padding: 8, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     fab: {
         position: "absolute",
         bottom: 24,
@@ -207,7 +384,36 @@ const styles = StyleSheet.create({
     },
     emptyContainer: { alignItems: 'center', marginTop: 60 },
     emptyText: { fontSize: 18, fontWeight: 'bold', color: '#888', marginTop: 16 },
-    emptySubText: { fontSize: 14, color: '#AAA', marginTop: 8 }
+    emptySubText: { fontSize: 14, color: '#AAA', marginTop: 8 },
+
+    // AI Styles
+    aiButton: {
+        position: 'absolute', bottom: 90, right: 24,
+        backgroundColor: '#7E57C2', flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: 20, paddingVertical: 12, borderRadius: 30,
+        elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25,
+    },
+    aiButtonText: { color: '#FFF', fontWeight: 'bold', marginLeft: 8 },
+
+    // Modal Styles
+    modalContainer: { flex: 1, backgroundColor: '#F5F5F5' },
+    modalHeader: { padding: 20, backgroundColor: '#FFF', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    modalTitle: { fontSize: 22, fontWeight: 'bold' },
+    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    loadingText: { marginTop: 20, fontSize: 18, fontWeight: '600' },
+    loadingSubText: { marginTop: 8, color: '#666' },
+    modalSubtitle: { padding: 16, color: '#666', fontSize: 14 },
+    suggestionList: { padding: 16 },
+    suggestionCard: { backgroundColor: '#FFF', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 2, borderColor: 'transparent' },
+    selectedCard: { borderColor: '#E40046', backgroundColor: '#FFF5F8' },
+    suggestionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    suggestionName: { fontSize: 18, fontWeight: 'bold', marginLeft: 10 },
+    suggestionDate: { fontSize: 12, color: '#E40046', fontWeight: '600' },
+    suggestionDesc: { color: '#666', marginBottom: 8 },
+    suggestionTime: { fontSize: 12, color: '#999' },
+    modalFooter: { padding: 20, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#EEE' },
+    saveButton: { backgroundColor: '#E40046', padding: 16, borderRadius: 12, alignItems: 'center' },
+    saveButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' }
 });
 
 

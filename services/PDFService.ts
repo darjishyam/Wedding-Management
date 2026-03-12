@@ -206,5 +206,75 @@ export const PDFService = {
           </body>
         </html>
       `;
-  }
+  },
+
+  generateEventPDFHTML(event: any, guests: any[]) {
+    const guestRows = guests.map(g => {
+      // Find status for this event
+      const assignment = g.assignedEvents.find((ae: any) =>
+        (typeof ae === 'string' ? ae === event._id : ae.event === event._id)
+      );
+      const status = typeof assignment === 'object' ? assignment.status : 'Invited';
+
+      return `
+            <tr>
+              <td>${g.name}</td>
+              <td>${g.familyCount}</td>
+              <td>${g.cityVillage}</td>
+              <td>${g.mobile || '-'}</td>
+              <td>${status}</td>
+            </tr>
+          `;
+    }).join('');
+
+    return `
+        <html>
+          <head>
+            <style>
+              body { font-family: 'Helvetica', sans-serif; padding: 20px; }
+              h1 { text-align: center; color: #7E57C2; }
+              .header-info { text-align: center; margin-bottom: 20px; color: #555; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f2f2f2; }
+              .summary { margin-top: 20px; font-weight: bold; }
+            </style>
+          </head>
+          <body>
+            <h1>${event.name}</h1>
+            <div class="header-info">
+              <p>Date: ${new Date(event.date).toDateString()} | Time: ${event.time || 'N/A'}</p>
+              <p>Venue: ${event.venue || 'N/A'}</p>
+              <p>${event.description || ''}</p>
+            </div>
+
+            <div class="summary">
+              <p>Total Invited Guests: ${guests.length}</p>
+              <p>Total Heads (Approx): ${guests.reduce((sum, g) => sum + (g.familyCount || 1), 0)}</p>
+            </div>
+
+            <table>
+              <tr>
+                <th>Guest Name</th>
+                <th>Family Count</th>
+                <th>City</th>
+                <th>Mobile</th>
+                <th>Status</th>
+              </tr>
+              ${guestRows}
+            </table>
+          </body>
+        </html>
+      `;
+  },
+
+  generateInvitationHTML(imageUri: string) {
+    return `
+      <html>
+        <body style="margin:0; padding:0; display:flex; justify-content:center; align-items:center; background-color: #f0f0f0;">
+          <img src="${imageUri}" style="width:100%; max-width:800px; height:auto;" />
+        </body>
+      </html>
+    `;
+  },
 };

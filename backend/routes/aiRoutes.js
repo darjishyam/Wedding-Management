@@ -5,7 +5,9 @@ const { getWeddingAdvice, generatePackageDescription } = require('../controllers
 
 router.post('/advice', protect, getWeddingAdvice);
 router.post('/package-description', protect, generatePackageDescription);
+router.post('/timeline', protect, require('../controllers/aiController').generateTimeline);
 router.post('/chat', protect, require('../controllers/aiController').chatWithAI);
 router.get('/history/:weddingId', protect, require('../controllers/aiController').getChatHistory);
+router.post('/ask', protect, require('../controllers/aiController').askAI);
 
 module.exports = router;

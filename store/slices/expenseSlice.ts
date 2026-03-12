@@ -22,9 +22,9 @@ const initialState: ExpenseState = {
     error: null,
 };
 
-export const fetchExpenses = createAsyncThunk('expense/fetchExpenses', async (_, { rejectWithValue }) => {
+export const fetchExpenses = createAsyncThunk('expense/fetchExpenses', async (weddingId: string, { rejectWithValue }) => {
     try {
-        const response = await api.get('/expenses');
+        const response = await api.get(`/expenses?weddingId=${weddingId}`);
         return response.data;
     } catch (error: any) {
         return rejectWithValue(error.response?.data?.message || 'Failed to fetch expenses');
@@ -37,6 +37,7 @@ export const addExpense = createAsyncThunk('expense/addExpense', async (data: {
     paidAmount: number;
     category: string;
     date: string;
+    weddingId?: string;
 }, { rejectWithValue }) => {
     try {
         const response = await api.post('/expenses', data);

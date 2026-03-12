@@ -186,7 +186,12 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
   };
 
   const totalChandlo = shagunEntries.reduce((sum, entry) => {
-    const val = parseInt(entry.amount.replace(/[₹,\s]/g, "")) || 0;
+    let val = 0;
+    if (typeof entry.amount === 'number') {
+      val = entry.amount;
+    } else if (typeof entry.amount === 'string') {
+      val = parseInt(entry.amount.replace(/[₹,\s]/g, "")) || 0;
+    }
     return sum + val;
   }, 0);
 
@@ -375,6 +380,22 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
             style={{ backgroundColor: "rgba(203, 230, 248, 0.6)" }}
             imageStyle={{ width: 35, height: 35, tintColor: '#000' }}
           />
+        </DashboardCard>
+
+        {/* Digital Invitations Card */}
+        <DashboardCard
+          title={t("digital_invite") || "Digital Invitations"}
+          icon="color-palette"
+          onPress={() => router.push("/invitations" as any)}
+          style={{ backgroundColor: "#FCEAFF" }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', padding: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#6A1B9A' }}>Create e-Cards</Text>
+              <Text style={{ fontSize: 12, color: '#8E24AA', marginTop: 4 }}>Traditional, Modern & More</Text>
+            </View>
+            <Ionicons name="card" size={32} color="rgba(106, 27, 154, 0.3)" />
+          </View>
         </DashboardCard>
 
         {/* Events Card */}

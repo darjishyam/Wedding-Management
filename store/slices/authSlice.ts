@@ -108,6 +108,7 @@ export const verifyOtp = createAsyncThunk(
 );
 
 export const logout = createAsyncThunk('auth/logout', async () => {
+    await authService.signOut(); // Ensure Firebase/Google SDKs are signed out
     await AsyncStorage.removeItem('userToken');
     await AsyncStorage.removeItem('userInfo');
 });
@@ -138,13 +139,57 @@ export const deleteAccount = createAsyncThunk(
     }
 );
 
+// Google Sign In Thunk
 export const signInWithGoogle = createAsyncThunk(
     'auth/signInWithGoogle',
-    async (_, { rejectWithValue }) => {
+    async (idToken: string | undefined, { rejectWithValue }) => {
         try {
-            const result = await authService.signInWithGoogle();
+            let result;
+            if (idToken) {
+                // Expo Auth Session Flow
+                result = await authService.signInWithGoogleCredential(idToken);
+            } else {
+                // Legacy / Native Flow - Now we ensure this is called when no token passed
+                result = await authService.signInWithGoogle();
+            }
+
             if (result && result.user) {
-                // Now exchange this for our backend token
+                // Check if this is the Mock User from Expo Go fallback (if used)
+                if (result.user.uid === 'expo-go-test-user') {
+                    // ... (keep existing mock user logic) ...
+                    const mockUserData = {
+                        _id: 'mock-user-id',
+                        name: result.user.displayName,
+                        email: result.user.email,
+                        mobile: '0000000000',
+                        isPremium: false,
+                        role: 'user',
+                        token: 'mock-jwt-token'
+                    };
+                    await AsyncStorage.setItem('userToken', mockUserData.token);
+                    await AsyncStorage.setItem('userInfo', JSON.stringify(mockUserData));
+                    return mockUserData;
+                }
+
+                // ... (rest of the logic) ...
+                // Check if this is the Mock User from Expo Go fallback
+                if (result.user.uid === 'expo-go-test-user') {
+                    // Skip backend verification and return mock data directly
+                    const mockUserData = {
+                        _id: 'mock-user-id',
+                        name: result.user.displayName,
+                        email: result.user.email,
+                        mobile: '0000000000',
+                        isPremium: false,
+                        role: 'user',
+                        token: 'mock-jwt-token'
+                    };
+                    await AsyncStorage.setItem('userToken', mockUserData.token);
+                    await AsyncStorage.setItem('userInfo', JSON.stringify(mockUserData));
+                    return mockUserData;
+                }
+
+                // Normal Flow: Exchange Firebase user for backend token
                 const { email, displayName, phoneNumber, photoURL } = result.user;
 
                 const response = await api.post('/auth/google', {

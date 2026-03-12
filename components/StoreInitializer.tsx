@@ -10,7 +10,8 @@ import { refreshWeddingData, resetWeddingState } from '../store/slices/weddingSl
 export default function StoreInitializer() {
     const dispatch = useAppDispatch();
     const user = useAppSelector(state => state.auth.user);
-    const hasWedding = useAppSelector(state => !!state.wedding.weddingData);
+    const { weddingData } = useAppSelector(state => state.wedding);
+    const hasWedding = !!weddingData;
 
     // Initial Load
     useEffect(() => {
@@ -30,16 +31,16 @@ export default function StoreInitializer() {
 
     // Wedding Active -> Fetch Related Data
     useEffect(() => {
-        if (hasWedding) {
-            dispatch(fetchGuests());
-            dispatch(fetchShaguns());
-            dispatch(fetchExpenses());
-        } else {
+        if (hasWedding && weddingData?._id) {
+            dispatch(fetchGuests(weddingData._id));
+            dispatch(fetchShaguns(weddingData._id));
+            dispatch(fetchExpenses(weddingData._id));
+        } else if (!hasWedding) {
             dispatch(clearGuests());
             dispatch(clearShaguns());
             dispatch(clearExpenses());
         }
-    }, [hasWedding, dispatch]);
+    }, [hasWedding, weddingData, dispatch]);
 
     return null;
 }

@@ -1,4 +1,5 @@
 import StoreInitializer from "@/components/StoreInitializer";
+import { ToastProvider } from "@/contexts/ToastContext";
 import { VendorProvider } from "@/contexts/VendorContext";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -10,6 +11,7 @@ import { store } from '../store/store';
 
 export default function RootLayout() {
   const [loaded, setLoaded] = useState(true);
+  console.log("RootLayout Rendered");
 
   useEffect(() => {
     SplashScreen.hideAsync();
@@ -21,40 +23,42 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
-      <VendorProvider>
-        <StoreInitializer />
-        <StatusBar style="dark" />
-        <View style={styles.container}>
-          <View style={styles.content}>
-            <Stack
-              screenOptions={{ headerShown: false }}
-              initialRouteName="index"
-            >
-              <Stack.Screen name="onboarding" />
-              <Stack.Screen name="login" />
-              <Stack.Screen name="signup" />
-              <Stack.Screen name="otp" />
-              <Stack.Screen name="shagun-book" />
-              <Stack.Screen name="add-shagun" />
-              <Stack.Screen name="expenses/index" />
-              <Stack.Screen name="expenses/add-expense" />
-              <Stack.Screen name="invitation-list" />
-              <Stack.Screen name="add-guest" />
-              <Stack.Screen name="purchase-premium" />
-              <Stack.Screen name="terms-of-service" />
-              <Stack.Screen name="delete-account" />
-              <Stack.Screen name="contact-us" />
+      <ToastProvider>
+        <VendorProvider>
+          <StoreInitializer />
+          <StatusBar style="dark" />
+          <View style={styles.container}>
+            <View style={styles.content}>
+              <Stack
+                screenOptions={{ headerShown: false }}
+                initialRouteName="index"
+              >
+                <Stack.Screen name="onboarding" />
+                <Stack.Screen name="login" />
+                <Stack.Screen name="signup" />
+                <Stack.Screen name="otp" />
+                <Stack.Screen name="shagun-book" />
+                <Stack.Screen name="add-shagun" />
+                <Stack.Screen name="expenses/index" />
+                <Stack.Screen name="expenses/add-expense" />
+                <Stack.Screen name="invitation-list" />
+                <Stack.Screen name="add-guest" />
+                <Stack.Screen name="purchase-premium" />
+                <Stack.Screen name="terms-of-service" />
+                <Stack.Screen name="delete-account" />
+                <Stack.Screen name="contact-us" />
 
-              {/* Tabs - Home page */}
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                {/* Tabs - Home page */}
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
-              {/* Admin Routes */}
-              <Stack.Screen name="admin/dashboard" />
-              <Stack.Screen name="admin/create-package" />
-            </Stack>
+                {/* Admin Routes */}
+                <Stack.Screen name="admin/dashboard" />
+                <Stack.Screen name="admin/create-package" />
+              </Stack>
+            </View>
           </View>
-        </View>
-      </VendorProvider>
+        </VendorProvider>
+      </ToastProvider>
     </Provider>
   );
 }

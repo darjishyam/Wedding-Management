@@ -5,6 +5,7 @@ const paymentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
+        index: true,
     },
     weddingId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -14,16 +15,17 @@ const paymentSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
-    type: {
+    purpose: {
         type: String,
-        default: 'Premium',
+        default: 'Premium Upgrade',
     },
-    method: {
+    mode: {
         type: String, // 'Razorpay', 'Mock', etc.
         default: 'Mock',
     },
     transactionId: {
         type: String,
+        index: true,
     },
     status: {
         type: String,

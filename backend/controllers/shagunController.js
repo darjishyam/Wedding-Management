@@ -6,13 +6,25 @@ const Wedding = require('../models/Wedding');
 // @access  Private
 const getShaguns = async (req, res) => {
     try {
-        // Find wedding for the user
-        const wedding = await Wedding.findOne({ user: req.user._id });
-        if (!wedding) {
-            return res.status(404).json({ message: 'Wedding not found' });
+        let weddingId = req.query.weddingId;
+
+        // Validation or fallback
+        if (!weddingId) {
+            // Fallback: Find first wedding for the user (legacy behavior, but try to avoid if possible)
+            const wedding = await Wedding.findOne({ user: req.user._id });
+            if (!wedding) {
+                return res.status(404).json({ message: 'Wedding not found' });
+            }
+            weddingId = wedding._id;
+        } else {
+            // Verify this wedding belongs to the user
+            const wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+            if (!wedding) {
+                return res.status(404).json({ message: 'Wedding not found or access denied' });
+            }
         }
 
-        const shaguns = await Shagun.find({ wedding: wedding._id }).sort({ date: -1 });
+        const shaguns = await Shagun.find({ wedding: weddingId }).sort({ date: -1 });
         res.json(shaguns);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -24,17 +36,31 @@ const getShaguns = async (req, res) => {
 // @access  Private
 const addShagun = async (req, res) => {
     try {
-        const wedding = await Wedding.findOne({ user: req.user._id });
-        if (!wedding) {
-            return res.status(404).json({ message: 'Wedding not found' });
+        let weddingId = req.body.weddingId;
+
+        if (!weddingId) {
+            const wedding = await Wedding.findOne({ user: req.user._id });
+            if (!wedding) {
+                return res.status(404).json({ message: 'Wedding not found' });
+            }
+            weddingId = wedding._id;
+        } else {
+            // Verify ownership
+            const wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+            if (!wedding) {
+                return res.status(404).json({ message: 'Wedding not found or access denied' });
+            }
         }
 
         const { name, amount, city, gift, contact, wishes, date } = req.body;
 
+        // Strip non-numeric chars if passed as string (e.g. "₹ 500")
+        const numericAmount = parseFloat(amount.toString().replace(/[^0-9.]/g, ''));
+
         const shagun = new Shagun({
-            wedding: wedding._id,
+            wedding: weddingId,
             name,
-            amount,
+            amount: numericAmount,
             city,
             gift,
             contact,

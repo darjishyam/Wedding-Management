@@ -26,9 +26,9 @@ const initialState: ShagunState = {
     error: null,
 };
 
-export const fetchShaguns = createAsyncThunk('shagun/fetchShaguns', async (_, { rejectWithValue }) => {
+export const fetchShaguns = createAsyncThunk('shagun/fetchShaguns', async (weddingId: string, { rejectWithValue }) => {
     try {
-        const response = await api.get('/shagun');
+        const response = await api.get(`/shagun?weddingId=${weddingId}`);
         // Map _id to id if component expects id
         return response.data.map((item: any) => ({ ...item, id: item._id }));
     } catch (error: any) {
@@ -36,7 +36,7 @@ export const fetchShaguns = createAsyncThunk('shagun/fetchShaguns', async (_, { 
     }
 });
 
-export const addShagun = createAsyncThunk('shagun/addShagun', async (entry: Omit<ShagunEntry, "id" | "_id">, { rejectWithValue }) => {
+export const addShagun = createAsyncThunk('shagun/addShagun', async (entry: Omit<ShagunEntry, "id" | "_id"> & { weddingId?: string }, { rejectWithValue }) => {
     try {
         const response = await api.post('/shagun', entry);
         return { ...response.data, id: response.data._id };

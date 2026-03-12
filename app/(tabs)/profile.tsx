@@ -1,10 +1,11 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOnboarding } from "@/contexts/OnboardingContext";
+import { useWedding } from "@/contexts/WeddingContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
@@ -12,7 +13,21 @@ export default function ProfileScreen() {
   const { user, logout, reloadUser } = useAuth();
   const { resetOnboarding } = useOnboarding();
   const { language, setLanguage, t } = useLanguage();
+  const { weddingData, updateWedding } = useWedding();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [tempStatus, setTempStatus] = useState(weddingData?.status || "Planned");
+
+  const handleUpdateStatus = async () => {
+    if (!weddingData?._id) return;
+    try {
+      await updateWedding(weddingData._id, { status: tempStatus });
+      setShowStatusModal(false);
+      Alert.alert("Success", "Wedding status updated!");
+    } catch (e) {
+      Alert.alert("Error", "Failed to update status");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -259,6 +274,60 @@ export default function ProfileScreen() {
               <TouchableOpacity
                 style={styles.saveButton}
                 onPress={() => setShowLanguageModal(false)}
+              >
+                <Text style={styles.saveButtonText}>{t("save")}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Status Modal */}
+      <Modal
+        visible={showStatusModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowStatusModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowStatusModal(false)}
+          />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Update Wedding Status</Text>
+              <TouchableOpacity onPress={() => setShowStatusModal(false)}>
+                <Ionicons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.languageOptions}>
+              {['Planned', 'Ongoing', 'Completed', 'Archived'].map((stat) => (
+                <TouchableOpacity
+                  key={stat}
+                  style={styles.languageOption}
+                  onPress={() => setTempStatus(stat)}
+                >
+                  <View style={styles.radioButton}>
+                    {tempStatus === stat && <View style={styles.radioButtonSelected} />}
+                  </View>
+                  <Text style={styles.languageOptionText}>{stat}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowStatusModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleUpdateStatus}
               >
                 <Text style={styles.saveButtonText}>{t("save")}</Text>
               </TouchableOpacity>

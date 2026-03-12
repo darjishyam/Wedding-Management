@@ -33,6 +33,7 @@ app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/vendors', require('./routes/vendorRoutes'));
 app.use('/api/payment', require('./routes/paymentRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/tasks', require('./routes/taskRoutes'));
 
 // Basic Route
 app.get('/', (req, res) => {

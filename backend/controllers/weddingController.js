@@ -36,7 +36,6 @@ const createWedding = async (req, res) => {
                 wedding.totalBudget = pkg.totalPrice || 0;
                 wedding.location = pkg.location;
                 wedding.venue = pkg.venue;
-                wedding.totalBudget = pkg.totalPrice;
 
                 await wedding.save();
 
@@ -60,7 +59,6 @@ const createWedding = async (req, res) => {
                         category: exp.category,
                         date: new Date(),
                     }));
-                    await Expense.insertMany(finalExpenseDocs);
                     await Expense.insertMany(finalExpenseDocs);
                 }
 
@@ -134,10 +132,15 @@ const getMyWedding = async (req, res) => {
             const shaguns = await Shagun.find({ wedding: wedding._id });
             const totalShagunAmount = shaguns.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
 
-            // Net Balance = (Budget + Income) - Spent
-            // OR Simple Balance = Budget - Spent (with Shagun shown separately as Income)
-            // Let's provide Net Balance as purely cashflow:
+            // Calculate Net Balance
             const netBalance = (wedding.totalBudget || 0) + totalShagunAmount - totalSpentAmount;
+
+            // Calculate Actual Breakdown (Categorized)
+            const actualBreakdown = expenses.reduce((acc, curr) => {
+                const cat = curr.category || 'Other';
+                acc[cat] = (acc[cat] || 0) + (curr.amount || 0);
+                return acc;
+            }, {});
 
             res.json({
                 ...wedding.toObject(),
@@ -146,7 +149,9 @@ const getMyWedding = async (req, res) => {
                     totalSpent: totalSpentAmount,
                     totalShagun: totalShagunAmount,
                     netBalance: netBalance,
-                    status: wedding.status // Ensure status is sent
+                    status: wedding.status,
+                    actualBreakdown, // Return categorized actuals
+                    budgetBreakdown: wedding.budgetBreakdown // Explicitly ensure this is available if nested
                 }
             });
         } else {
@@ -172,17 +177,21 @@ const updateWedding = async (req, res) => {
             if (totalBudget !== undefined) wedding.totalBudget = totalBudget;
 
             // Update individual budgets if provided
-            if (req.body.catering !== undefined) wedding.catering = req.body.catering;
-            if (req.body.decoration !== undefined) wedding.decoration = req.body.decoration;
-            if (req.body.stay !== undefined) wedding.stay = req.body.stay;
-            if (req.body.photography !== undefined) wedding.photography = req.body.photography;
-            if (req.body.travel !== undefined) wedding.travel = req.body.travel;
-            if (req.body.makeup !== undefined) wedding.makeup = req.body.makeup;
-            if (req.body.otherExpenses !== undefined) wedding.otherExpenses = req.body.otherExpenses;
+            // Update individual budgets if needed (removed legacy fields)
+            // if (req.body.catering !== undefined) wedding.catering = req.body.catering;
+            // if (req.body.decoration !== undefined) wedding.decoration = req.body.decoration;
+            // ... all moved to Expense collection logic
 
             if (req.body.type) wedding.type = req.body.type;
             if (req.body.location) wedding.location = req.body.location;
+            if (req.body.status) wedding.status = req.body.status;
             if (req.body.venue) wedding.venue = req.body.venue;
+            if (req.body.budgetBreakdown) {
+                wedding.budgetBreakdown = {
+                    ...wedding.budgetBreakdown, // Keep existing values
+                    ...req.body.budgetBreakdown // Overwrite with new
+                };
+            }
             if (req.body.groomImage !== undefined) wedding.groomImage = req.body.groomImage;
             if (req.body.brideImage !== undefined) wedding.brideImage = req.body.brideImage;
 

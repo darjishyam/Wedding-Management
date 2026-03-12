@@ -33,8 +33,9 @@ export default function MyChandlaScreen() {
     return `${day}-${month}-${year}`;
   };
 
-  const extractAmount = (amountString: string): number => {
-    const numericValue = amountString.replace(/[₹,\s]/g, "");
+  const extractAmount = (amountVal: string | number): number => {
+    if (typeof amountVal === 'number') return amountVal;
+    const numericValue = amountVal.toString().replace(/[₹,\s]/g, "");
     return parseInt(numericValue) || 0;
   };
 
@@ -203,7 +204,7 @@ export default function MyChandlaScreen() {
                       <Ionicons name="cash-outline" size={16} color="#000" />
                       <Text style={styles.statLabel}>{t("total_chandlo")}</Text>
                     </View>
-                    <Text style={styles.statValue}>{entry.amount}</Text>
+                    <Text style={styles.statValue}>₹ {entry.amount}</Text>
                   </View>
                 </View>
 

@@ -361,7 +361,7 @@ const upgradeToPremium = async (req, res) => {
 // @access  Private
 const getMe = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).select('-password');
+        const user = await User.findById(req.user._id).select('-password -__v');
         if (user) {
             res.json({
                 _id: user.id,
@@ -394,7 +394,7 @@ const updateProfile = async (req, res) => {
         if (name) updates.name = name;
         // Email update might require verification, skipping for now or allow if not strict.
 
-        const user = await User.findByIdAndUpdate(userId, updates, { new: true }).select('-password');
+        const user = await User.findByIdAndUpdate(userId, updates, { new: true }).select('-password -__v');
 
         res.json({
             _id: user.id,
@@ -410,4 +410,101 @@ const updateProfile = async (req, res) => {
     }
 };
 
-module.exports = { registerUser, loginUser, verifyOtp, deleteAccount, upgradeToPremium, getMe, updateProfile, googleLogin };
+// @desc    Forgot Password - Send OTP
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const forgotPassword = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User with this email does not exist' });
+        }
+
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+        // Save OTP to user
+        user.otp = otp;
+        user.otpExpires = otpExpires;
+        await user.save();
+
+        // Send OTP via Email
+        const message = `You requested a password reset. Your OTP is: ${otp}\n\nIt is valid for 10 minutes.`;
+
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Password Reset OTP',
+                message: message,
+            });
+            res.json({ message: 'OTP sent to your email', email: user.email });
+        } catch (emailError) {
+            user.otp = undefined;
+            user.otpExpires = undefined;
+            await user.save();
+            return res.status(500).json({ message: 'Email could not be sent' });
+        }
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Reset Password
+// @route   POST /api/auth/reset-password
+// @access  Public
+const resetPassword = async (req, res) => {
+    const { email, otp, newPassword } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (!user.otp || !user.otpExpires) {
+            return res.status(400).json({ message: 'Invalid request. Please request a new OTP.' });
+        }
+
+        if (String(user.otp).trim() !== String(otp).trim()) {
+            return res.status(400).json({ message: 'Invalid OTP' });
+        }
+
+        if (user.otpExpires < Date.now()) {
+            return res.status(400).json({ message: 'OTP has expired' });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+
+        // Clear OTP
+        user.otp = undefined;
+        user.otpExpires = undefined;
+
+        await user.save();
+
+        res.json({ message: 'Password reset successful. You can now login.' });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = {
+    registerUser,
+    loginUser,
+    verifyOtp,
+    deleteAccount,
+    upgradeToPremium,
+    getMe,
+    updateProfile,
+    googleLogin,
+    forgotPassword,
+    resetPassword
+};

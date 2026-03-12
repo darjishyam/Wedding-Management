@@ -40,8 +40,8 @@ export function useAuth() {
         await dispatch(deleteAccountAction());
     };
 
-    const signInWithGoogle = async () => {
-        await dispatch(signInWithGoogleAction()).unwrap();
+    const signInWithGoogle = async (idToken?: string) => {
+        await dispatch(signInWithGoogleAction(idToken)).unwrap();
     };
 
     return {

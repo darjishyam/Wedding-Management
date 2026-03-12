@@ -30,8 +30,15 @@ const guestSchema = new mongoose.Schema({
         default: 'Not Invited',
     },
     assignedEvents: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Event'
+        event: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Event'
+        },
+        status: {
+            type: String,
+            enum: ['Pending', 'Confirmed', 'Declined'],
+            default: 'Pending'
+        }
     }],
     isInvited: {
         type: Boolean,

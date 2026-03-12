@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "HelloWorld",
-    "slug": "HelloWorld",
+    "slug": "helloworld",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -30,6 +30,7 @@
     "plugins": [
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
+      "@react-native-google-signin/google-signin",
       "expo-router",
       [
         "expo-splash-screen",
@@ -60,7 +61,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "4f59419f-1284-4e34-8027-7d7042b94f0a"
+        "projectId": "aa48643e-9dae-4b95-bec7-b9522d052b0e"
       }
     }
   }

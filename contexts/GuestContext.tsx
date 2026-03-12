@@ -24,12 +24,17 @@ export function useGuest() {
     // const hasWedding = useAppSelector(state => !!state.wedding.weddingData);
     // useEffect(() => { ... }, [hasWedding]);
 
+    const { weddingData } = useAppSelector(state => state.wedding);
+
     const fetchGuests = async () => {
-        await dispatch(fetchGuestsAction());
+        if (weddingData?._id) {
+            await dispatch(fetchGuestsAction(weddingData._id));
+        }
     };
 
-    const addGuest = async (name: string, count: number, city: string, category?: string, status?: string) => {
-        await dispatch(addGuestAction({ name, count, city, category, status })).unwrap();
+    const addGuest = async (name: string, count: number, city: string, category?: string, status?: string, assignedEvents?: any[]) => {
+        if (!weddingData?._id) return;
+        await dispatch(addGuestAction({ name, count, city, category, status, assignedEvents, weddingId: weddingData._id })).unwrap();
     };
 
     const updateGuestStatus = async (id: string, isInvited?: boolean, status?: string) => {

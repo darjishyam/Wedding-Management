@@ -16,13 +16,72 @@ export default function PurchasePremiumScreen() {
 
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handlePurchase = () => {
+  // Auto-refresh when coming back from PayPal
+  const { AppState } = require('react-native');
+  const { useEffect } = require('react');
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: any) => {
+      if (nextAppState === 'active') {
+        console.log("App resumed, checking premium status...");
+        reloadUser();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const handlePurchase = async () => {
     if (!user) {
       Alert.alert("Login Required", "Please login to purchase premium.");
       router.push("/login");
       return;
     }
-    router.push("/payment/mock-payment" as any);
+    // router.push("/payment/mock-payment" as any);
+
+    console.log("Current User State:", user ? JSON.stringify(user) : "No User");
+    console.log("Is Premium:", user?.isPremium);
+
+    // PayPal Logic
+    setIsProcessing(true);
+    try {
+      const api = require('@/services/api').default;
+      const response = await api.post('/payment/paypal/create');
+
+      if (response.data && response.data.approvalUrl) {
+        // Open PayPal in default browser
+        const Linking = require('react-native').Linking;
+        await Linking.openURL(response.data.approvalUrl);
+
+        // In a real app, we would listen for deep links.
+        // For this demo/Simple Sandbox, we can just show an alert telling user what to do.
+        Alert.alert(
+          "PayPal Opened",
+          "Please complete the payment in the browser. Once done, return here and your premium will be active.",
+          [{
+            text: "I've Paid", onPress: async () => {
+              // Reload user to check if premium is active
+              try {
+                await reloadUser();
+                Alert.alert("Success", "Premium Activated!");
+                router.replace("/(tabs)/profile");
+              } catch (e) {
+                Alert.alert("Status", "Could not verify yet. Please restart app.");
+              }
+            }
+          }]
+        );
+      } else {
+        Alert.alert("Error", "Could not generate PayPal link.");
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Payment initiation failed.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const isPremium = user?.isPremium;

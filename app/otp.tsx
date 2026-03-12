@@ -1,20 +1,26 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OtpScreen() {
   const router = useRouter();
   const { mobile, name, email, password } = useLocalSearchParams<{ mobile: string, name: string, email: string, password: string }>();
-  const { verifyOtp, register } = useAuth();
+  const { verifyOtp, register, logout } = useAuth();
+  const { showToast } = useToast();
 
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleVerify = async () => {
     if (!otp) {
-      Alert.alert("Error", "Please enter OTP");
+      showToast("Please enter OTP", "warning");
+      return;
+    }
+    if (otp.length !== 6) {
+      showToast("OTP must be 6 digits", "error");
       return;
     }
     setLoading(true);
@@ -43,12 +49,16 @@ export default function OtpScreen() {
       // Verify OTP with backend (which also logs user in and returns token)
       await verifyOtp(mobile, otp);
 
-      Alert.alert("Success", "Verified and Registered successfully!");
-      router.replace('/(tabs)');
+      // MENTOR REQUEST: Redirect to login page instead of auto-login
+      // We call logout to clear the automatic session created by the backend
+      await logout();
+
+      showToast("Account created successfully! Please login.", "success");
+      router.replace('/login');
     } catch (error: any) {
       console.error("Verification Error:", error);
-      const errorMessage = error.response?.data?.message || "Invalid or expired OTP";
-      Alert.alert("Verification Failed", errorMessage);
+      const errorMessage = error.response?.data?.message || error.message || "Invalid or expired OTP";
+      showToast(errorMessage, "error");
     } finally {
       setLoading(false);
     }
@@ -67,7 +77,7 @@ export default function OtpScreen() {
 
           <Text style={styles.title}>OTP Verification</Text>
           <Text style={styles.subtitle}>
-            Please check your phone ({mobile}) to see the verification code.
+            Please check your email ({email}) to see the verification code.
           </Text>
 
           <View style={styles.otpContainer}>

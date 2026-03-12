@@ -8,7 +8,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 export default function AdminDashboard() {
     const router = useRouter();
     const { logout, user } = useAuth();
-    const [stats, setStats] = React.useState({ users: 0, weddings: 0, premiumUsers: 0, vendors: 0, packages: 0 });
+    const [stats, setStats] = React.useState({ users: 0, weddings: 0, premiumUsers: 0, vendors: 0, packages: 0, revenue: 0 });
 
     React.useEffect(() => {
         fetchStats();
@@ -52,8 +52,8 @@ export default function AdminDashboard() {
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
-                        <Text style={styles.statValue}>{stats.premiumUsers}</Text>
-                        <Text style={styles.statLabel}>Premium</Text>
+                        <Text style={styles.statValue}>₹{(stats.revenue || 0).toLocaleString()}</Text>
+                        <Text style={styles.statLabel}>Revenue</Text>
                     </View>
                 </View>
             </View>
@@ -73,6 +73,14 @@ export default function AdminDashboard() {
                     </View>
                     <Text style={styles.cardTitle}>Manage Users</Text>
                     <Text style={styles.cardDescription}>View registered users ({stats.users})</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.card} onPress={() => router.push('/admin/weddings' as any)}>
+                    <View style={[styles.iconContainer, { backgroundColor: '#F3E5F5' }]}>
+                        <Ionicons name="heart-outline" size={32} color="#8E24AA" />
+                    </View>
+                    <Text style={styles.cardTitle}>Manage Weddings</Text>
+                    <Text style={styles.cardDescription}>View all weddings ({stats.weddings})</Text>
                 </TouchableOpacity>
             </View>
         </ScrollView>

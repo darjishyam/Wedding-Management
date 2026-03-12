@@ -3,23 +3,91 @@ import CustomHeader from "@/components/CustomHeader";
 import CustomInput from "@/components/CustomInput";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
-import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login, signInWithGoogle } = useAuth();
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      WebBrowser.warmUpAsync();
+    }
+    return () => {
+      if (Platform.OS !== 'web') {
+        WebBrowser.coolDownAsync();
+      }
+    };
+  }, []);
+
+  // We use the Web Client ID for all platforms when using the Auth Proxy (ID Token flow)
+  // This avoids potential issues where Google expects a native Android client ID but gets a web one.
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    clientId: '571332592140-gbibcqolk9m3sfbqplc1abqf4mkbkinc.apps.googleusercontent.com',
+    responseType: 'id_token',
+    redirectUri: 'https://auth.expo.io/@professor_fan/helloworld',
+  });
+
+  useEffect(() => {
+    if (request) {
+      console.log("Current Redirect URI:", request.redirectUri);
+    }
+  }, [request]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    console.log("Auth Session Response:", JSON.stringify(response));
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      console.log("Google Sign-In Success! Token:", id_token ? "Found" : "Missing");
+      handleGoogleSignInProcess(id_token);
+    } else if (response?.type === 'error') {
+      console.error("Google Sign-In Error Response:", response.error);
+      showToast("Authentication error occurred", "error");
+    }
+  }, [response]);
+
+  const handleGoogleSignInProcess = async (idToken: string) => {
+    try {
+      // setLoading(true); // Optional: manage loading state if desired
+      await signInWithGoogle(idToken);
+      router.replace("/(tabs)");
+    } catch (error: any) {
+      console.error("Google Sign-In Error:", error);
+      showToast(error.message || "Google login failed", "error");
+    }
+  };
+
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please enter email and password");
+    // Email validation
+    if (!email) {
+      showToast("Please enter your email address", "warning");
+      return;
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showToast("Please enter a valid email address", "error");
+      return;
+    }
+
+    if (!password) {
+      showToast("Please enter your password", "warning");
       return;
     }
 
@@ -28,14 +96,24 @@ export default function LoginScreen() {
       const userData = await login(email, password);
       // Check role directly from response or user object
       if (userData?.role === 'admin') {
-        // Use 'as any' to avoid router type errors if admin routes aren't typed
+        showToast("Welcome Admin!", "success");
         router.replace("/admin/dashboard" as any);
       } else {
+        showToast("Login successful!", "success");
         router.replace("/(tabs)");
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Invalid credentials";
-      Alert.alert("Login Failed", errorMessage);
+      const errorMessage = error.response?.data?.message || error.message || "Invalid credentials";
+
+      // Specific handling for user not found
+      if (errorMessage.toLowerCase().includes('user not found') ||
+        errorMessage.toLowerCase().includes('invalid email')) {
+        showToast("Account not found. Please sign up first!", "error", 4000);
+      } else if (errorMessage.toLowerCase().includes('not verified')) {
+        showToast("Please verify your account via OTP first", "warning", 4000);
+      } else {
+        showToast(errorMessage, "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -43,11 +121,30 @@ export default function LoginScreen() {
 
   const handleGoogleLogin = async () => {
     try {
-      await signInWithGoogle();
-      router.replace("/(tabs)");
-    } catch (error: any) {
-      console.error("Google Sign-In Error:", error);
-      Alert.alert("Google Login Failed", error.message);
+      // NATIVE FLOW: Preferred for APK/Android
+      if (Platform.OS !== 'web') {
+        try {
+          // Attempt native sign in (authService handles play services check)
+          const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+          if (GoogleSignin) {
+            await GoogleSignin.hasPlayServices();
+            await signInWithGoogle();
+            router.replace("/(tabs)");
+            return;
+          }
+        } catch (nativeError: any) {
+          console.log("Native Sign-In failed", nativeError);
+          // If native fails (e.g. config error), we can alert or fall back. 
+          // user prefers native-only usually, but let's keep it robust.
+          Alert.alert("Login Failed", "Could not sign in with Google. Please try again.");
+          return;
+        }
+      }
+
+      // Fallback to Auth Session (Expo Go / Web)
+      await promptAsync();
+    } catch (e) {
+      console.log("Auth Session or Fallback Error", e);
     }
   };
 
@@ -89,7 +186,7 @@ export default function LoginScreen() {
         </View>
 
         {/* Forgot Password */}
-        <TouchableOpacity style={styles.forgotPassword}>
+        <TouchableOpacity style={styles.forgotPassword} onPress={() => router.push("/forgot-password")}>
           <Text style={styles.forgotPasswordText}>Forget Password?</Text>
         </TouchableOpacity>
 
@@ -100,7 +197,6 @@ export default function LoginScreen() {
           loading={loading}
         />
 
-        {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>New Member? </Text>
           <Link href="/signup" asChild>
@@ -115,6 +211,7 @@ export default function LoginScreen() {
   );
 }
 
+// @ts-ignore
 const styles = StyleSheet.create({
   scrollContent: {
     padding: 24,
@@ -154,34 +251,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 16,
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E6E6E6',
-  },
-  dividerText: {
-    marginHorizontal: 10,
-    color: '#6F6F6F',
-    fontSize: 14,
-  },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#E6E6E6',
-    borderRadius: 30,
-    marginBottom: 20,
-  },
-  googleButtonText: {
-    fontSize: 16,
-    color: '#000',
-    fontWeight: '600',
-  },
 });
+
+

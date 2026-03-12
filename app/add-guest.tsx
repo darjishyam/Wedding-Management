@@ -3,7 +3,7 @@ import { useGuest } from "@/contexts/GuestContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -27,6 +27,32 @@ export default function AddGuestScreen() {
     setStatus("Not Invited");
   };
 
+  // Fetch events
+  const [events, setEvents] = useState<any[]>([]);
+  const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Load events
+    const loadEvents = async () => {
+      try {
+        const api = require('@/services/api').default;
+        const res = await api.get('/events');
+        setEvents(res.data);
+      } catch (e) {
+        console.log("Failed to load events", e);
+      }
+    };
+    loadEvents();
+  }, []);
+
+  const toggleEvent = (eventId: string) => {
+    if (selectedEventIds.includes(eventId)) {
+      setSelectedEventIds(prev => prev.filter(id => id !== eventId));
+    } else {
+      setSelectedEventIds(prev => [...prev, eventId]);
+    }
+  };
+
   const handleSaveCommon = async (shouldGoBack: boolean) => {
     if (!name.trim() || !totalFamilyCount.trim() || !cityVillage.trim()) {
       Alert.alert(t("error"), t("all_fields_mandatory"));
@@ -35,19 +61,25 @@ export default function AddGuestScreen() {
 
     setLoading(true);
     try {
-      await addGuest(name, parseInt(totalFamilyCount), cityVillage, category, status);
+      // Map selected IDs to object structure expected by backend
+      const assignedEvents = selectedEventIds.map(id => ({
+        event: id,
+        status: 'Pending'
+      }));
+
+      await addGuest(name, parseInt(totalFamilyCount), cityVillage, category, status, assignedEvents);
       Alert.alert(t("success"), t("guest_added_success"));
       if (shouldGoBack) {
         // Redirect to Home Page as requested
         router.navigate("/(tabs)");
       } else {
         resetForm();
+        setSelectedEventIds([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert(t("error"), t("failed_add_guest"));
     } finally {
       setLoading(false);
-
     }
   }
 
@@ -134,6 +166,31 @@ export default function AddGuestScreen() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+          </View>
+
+          {/* Events Selection */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Invited to Events</Text>
+            {events.length === 0 ? (
+              <Text style={{ color: '#999', fontSize: 13 }}>No events created yet.</Text>
+            ) : (
+              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                {events.map((evt) => (
+                  <TouchableOpacity
+                    key={evt._id}
+                    style={[
+                      styles.chip,
+                      selectedEventIds.includes(evt._id) && styles.chipSelected
+                    ]}
+                    onPress={() => toggleEvent(evt._id)}
+                  >
+                    <Text style={[styles.chipText, selectedEventIds.includes(evt._id) && styles.chipTextSelected]}>
+                      {evt.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* Status Selection */}

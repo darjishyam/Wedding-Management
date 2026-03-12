@@ -16,6 +16,15 @@ export interface Wedding {
     location?: string;
     type?: string;
     venue?: string;
+    budgetBreakdown?: {
+        catering: number;
+        decoration: number;
+        venue: number;
+        photography: number;
+        travel: number;
+        makeup: number;
+        otherExpenses: number;
+    };
 }
 
 interface WeddingState {

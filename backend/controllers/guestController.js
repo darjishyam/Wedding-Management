@@ -5,10 +5,16 @@ const Wedding = require('../models/Wedding');
 // @route   POST /api/guests
 // @access  Private
 const addGuest = async (req, res) => {
-    const { name, cityVillage, familyCount, category, status } = req.body;
+    const { name, cityVillage, familyCount, category, status, assignedEvents, weddingId } = req.body;
 
     try {
-        const wedding = await Wedding.findOne({ user: req.user._id });
+        let wedding;
+        if (weddingId) {
+            wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+        } else {
+            wedding = await Wedding.findOne({ user: req.user._id });
+        }
+
         if (!wedding) {
             return res.status(404).json({ message: 'Wedding not found' });
         }
@@ -20,6 +26,7 @@ const addGuest = async (req, res) => {
             familyCount,
             category: category || 'Other',
             status: status || 'Not Invited',
+            assignedEvents: assignedEvents || []
         });
 
         res.status(201).json(guest);
@@ -33,12 +40,19 @@ const addGuest = async (req, res) => {
 // @access  Private
 const getGuests = async (req, res) => {
     try {
-        const wedding = await Wedding.findOne({ user: req.user._id });
-        if (!wedding) {
-            return res.status(404).json({ message: 'Wedding not found' });
+        let weddingId = req.query.weddingId;
+
+        if (!weddingId) {
+            const wedding = await Wedding.findOne({ user: req.user._id });
+            if (!wedding) return res.json([]);
+            weddingId = wedding._id;
+        } else {
+            // Verify ownership
+            const wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+            if (!wedding) return res.status(404).json({ message: 'Wedding not found' });
         }
 
-        const guests = await Guest.find({ wedding: wedding._id });
+        const guests = await Guest.find({ wedding: weddingId });
         res.json(guests);
     } catch (error) {
         res.status(500).json({ message: error.message });

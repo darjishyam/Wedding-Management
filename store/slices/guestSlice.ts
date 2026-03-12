@@ -8,7 +8,9 @@ export interface Guest {
     cityVillage: string;
     category?: string;
     status?: string;
-    isInvited?: boolean;
+    isInvited: boolean;
+    shagunAmount: number;
+    assignedEvents?: { event: string, status: string }[];
 }
 
 interface GuestState {
@@ -19,9 +21,9 @@ interface GuestState {
 
 // ... (GuestState remains same)
 
-export const fetchGuests = createAsyncThunk('guest/fetchGuests', async (_, { rejectWithValue }) => {
+export const fetchGuests = createAsyncThunk('guest/fetchGuests', async (weddingId: string, { rejectWithValue }) => {
     try {
-        const response = await api.get('/guests');
+        const response = await api.get(`/guests?weddingId=${weddingId}`);
         return response.data; // Expected to contain new fields now
     } catch (error: any) {
         return rejectWithValue(error.response?.data?.message || 'Failed to fetch guests');
@@ -31,16 +33,18 @@ export const fetchGuests = createAsyncThunk('guest/fetchGuests', async (_, { rej
 export const addGuest = createAsyncThunk(
     'guest/addGuest',
     async (
-        { name, count, city, category, status }: { name: string; count: number; city: string; category?: string; status?: string },
+        { name, count, city, category, status, assignedEvents, weddingId }: { name: string; count: number; city: string; category?: string; status?: string, assignedEvents?: any[], weddingId?: string },
         { rejectWithValue }
     ) => {
         try {
             const response = await api.post('/guests', {
+                weddingId,
                 name,
                 familyCount: count,
                 cityVillage: city,
                 category,
-                status
+                status,
+                assignedEvents
             });
             return response.data;
         } catch (error: any) {

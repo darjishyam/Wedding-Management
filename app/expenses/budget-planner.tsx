@@ -40,32 +40,14 @@ export default function BudgetPlannerScreen() {
     useEffect(() => {
         if (weddingData) {
             setTotalBudget(weddingData.totalBudget?.toString() || "0");
-            setCatering(weddingData.catering?.toString() || "0");
-            setDecoration(weddingData.decoration?.toString() || "0");
-            setVenue(weddingData.venueCost?.toString() || weddingData.venue?.match(/\d+/)?.[0] || "0"); // heuristic if venue was string
-            // Note: venue in model is string (name), but now we want budget. 
-            // Actually backend model has 'venue' as string. I added 'venue' cost? 
-            // Wait, in my controller update: "if (req.body.venue) wedding.venue = req.body.venue;" -> that's name.
-            // I didn't add 'venueCost' explicitly in the model, but I added 'otherExpenses'. 
-            // Let's check model again. 
-            // Model has: catering (Number), decoration (Number), stay (Number).
-            // I added: photography, travel, makeup, otherExpenses.
-            // What about Venue Cost? "venue" is string.
-            // The user wants "Venue" as a budget category.
-            // I should probably use 'otherExpenses' for now or assume 'venue' is just name and maybe 'rent'?
-            // Or I can add 'venueCost' to model?
-            // I'll stick to what I have. 'stay' is usually venue/hotel in some contexts but let's assume 'stay' is separate.
-            // I'll use 'otherExpenses' for Venue Cost specific or just assume it's part of 'others' for now 
-            // OR I should have added 'venueCost'. 
-            // Let's look at the "Handwritten image". "Vadi: 1,00,000". That is venue cost.
-            // I should add 'venueCost' to model if I missed it, or reuse one.
-            // Existing model has 'stay'.
-            // I'll add 'venueCost' to model now to be precise.
-
-            setPhotography(weddingData.photography?.toString() || "0");
-            setTravel(weddingData.travel?.toString() || "0");
-            setMakeup(weddingData.makeup?.toString() || "0");
-            setOther(weddingData.otherExpenses?.toString() || "0");
+            const breakdown = weddingData.budgetBreakdown || {};
+            setCatering(breakdown.catering?.toString() || "0");
+            setDecoration(breakdown.decoration?.toString() || "0");
+            setStay(breakdown.venue?.toString() || "0"); // Using 'venue' field in breakdown for Venue & Stay
+            setPhotography(breakdown.photography?.toString() || "0");
+            setTravel(breakdown.travel?.toString() || "0");
+            setMakeup(breakdown.makeup?.toString() || "0");
+            setOther(breakdown.otherExpenses?.toString() || "0");
         }
     }, [weddingData]);
 
@@ -95,13 +77,15 @@ export default function BudgetPlannerScreen() {
         try {
             await api.put(`/weddings/${weddingData._id}`, {
                 totalBudget: parseFloat(totalBudget) || 0,
-                catering: parseFloat(catering) || 0,
-                decoration: parseFloat(decoration) || 0,
-                stay: parseFloat(stay) || 0,
-                photography: parseFloat(photography) || 0,
-                travel: parseFloat(travel) || 0,
-                makeup: parseFloat(makeup) || 0,
-                otherExpenses: parseFloat(other) || 0,
+                budgetBreakdown: {
+                    catering: parseFloat(catering) || 0,
+                    decoration: parseFloat(decoration) || 0,
+                    venue: parseFloat(stay) || 0, // Mapping 'Stay' UI to 'venue' Schema
+                    photography: parseFloat(photography) || 0,
+                    travel: parseFloat(travel) || 0,
+                    makeup: parseFloat(makeup) || 0,
+                    otherExpenses: parseFloat(other) || 0,
+                }
             });
 
             await refreshWeddingData(); // Refresh context

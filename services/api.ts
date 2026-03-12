@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { Platform } from 'react-native';
 
 import Constants from 'expo-constants';
 
@@ -9,11 +8,10 @@ const debuggerHost = Constants.expoConfig?.hostUri;
 const localhost = debuggerHost?.split(":")[0];
 
 // Define BASE_URL
-const BASE_URL = Platform.OS === 'web'
-    ? `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:5000/api`
-    : `http://${localhost || '10.0.2.2'}:5000/api`;
-// Note: If you want to test on Production, uncomment the line below and comment out the above line
-// : 'https://marriage-repo.onrender.com/api';
+const BASE_URL = 'https://wedding-management-dqr8.onrender.com/api';
+// const BASE_URL = Platform.OS === 'web'
+//     ? `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:5000/api`
+//     : `http://10.31.255.131:5000/api`;
 
 const api = axios.create({
     baseURL: BASE_URL,

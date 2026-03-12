@@ -4,15 +4,49 @@ import CustomInput from "@/components/CustomInput";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/contexts/ToastContext";
 import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignupScreen() {
   const router = useRouter();
   const { register, signInWithGoogle } = useAuth();
   const { t } = useLanguage();
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      WebBrowser.warmUpAsync();
+    }
+    return () => {
+      if (Platform.OS !== 'web') {
+        WebBrowser.coolDownAsync();
+      }
+    };
+  }, []);
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: '571332592140-gbibcqolk9m3sfbqplc1abqf4mkbkinc.apps.googleusercontent.com',
+    androidClientId: '571332592140-gbibcqolk9m3sfbqplc1abqf4mkbkinc.apps.googleusercontent.com',
+    responseType: 'id_token',
+    redirectUri: Platform.select({
+      web: undefined,
+      default: 'https://auth.expo.io/@professor_fan/helloworld',
+    }),
+  });
+
+  useEffect(() => {
+    if (request) {
+      console.log("Generated Redirect URI:", request.redirectUri);
+    }
+  }, [request]);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -23,36 +57,91 @@ export default function SignupScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Helper for cross-platform alerts
-  const showAlert = (title: string, message: string) => {
-    if (Platform.OS === 'web') {
-      window.alert(`${title}: ${message}`);
-    } else {
-      Alert.alert(title, message);
+
+
+  // Listen for Google Auth response
+  useEffect(() => {
+    console.log("Auth Session Response:", JSON.stringify(response));
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      console.log("Google Sign-In Success! Token:", id_token ? "Found" : "Missing");
+      handleGoogleSignInProcess(id_token);
+    } else if (response?.type === 'error') {
+      console.error("Google Sign-In Error Response:", response.error);
+      showToast("Authentication error occurred", "error");
+    }
+  }, [response]);
+
+  const handleGoogleSignInProcess = async (idToken: string) => {
+    try {
+      setLoading(true);
+      await signInWithGoogle(idToken);
+      router.replace("/(tabs)");
+    } catch (error: any) {
+      console.error("Google Sign-In Error:", error);
+      showToast(error.message || "Google login failed", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSignup = async () => {
-    if (!name || !email || !mobile || !password || !confirmPassword) {
-      showAlert(t("error"), t("all_fields_mandatory") || "All fields are required");
+    // Name validation
+    if (!name || name.trim().length < 2) {
+      showToast("Please enter a valid name (at least 2 characters)", "warning");
       return;
     }
 
-    if (password !== confirmPassword) {
-      showAlert(t("error"), t("passwords_do_not_match") || "Passwords do not match");
+    // Validate name contains only letters and spaces (no numbers or special characters)
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (!nameRegex.test(name.trim())) {
+      showToast("Name can only contain letters and spaces (no numbers or special characters)", "error", 4000);
+      return;
+    }
+
+    // Email validation
+    if (!email) {
+      showToast("Please enter your email address", "warning");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showToast("Please enter a valid email address", "error");
       return;
     }
 
     // Smart Check for common typos
     if (email.toLowerCase().endsWith("@gmail.co")) {
-      showAlert("Did you mean @gmail.com?", "It looks like you typed '@gmail.co' instead of '@gmail.com'.");
+      showToast("Did you mean @gmail.com? Please check your email", "warning", 4000);
       return;
     }
 
-    // Mobile Validation: Exactly 10 digits
+    // Mobile validation
+    if (!mobile) {
+      showToast("Please enter your mobile number", "warning");
+      return;
+    }
+
     const mobileRegex = /^\d{10}$/;
     if (!mobileRegex.test(mobile)) {
-      showAlert(t("invalid_mobile"), t("mobile_10_digits") || "Mobile number must be 10 digits");
+      showToast("Mobile number must be exactly 10 digits", "error");
+      return;
+    }
+
+    // Password validation
+    if (!password) {
+      showToast("Please enter a password", "warning");
+      return;
+    }
+
+    if (!confirmPassword) {
+      showToast("Please confirm your password", "warning");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showToast("Passwords do not match", "error");
       return;
     }
 
@@ -61,7 +150,11 @@ export default function SignupScreen() {
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 
     if (!passwordRegex.test(trimmedPassword)) {
-      showAlert(t("weak_password"), t("password_requirements") || "Password must be at least 8 characters, with 1 uppercase, 1 lowercase, 1 number, and 1 special char.");
+      showToast(
+        "Password must be at least 8 characters with 1 uppercase, 1 lowercase, 1 number, and 1 special character",
+        "error",
+        5000
+      );
       return;
     }
 
@@ -69,6 +162,8 @@ export default function SignupScreen() {
     try {
       // BACKEND OTP FLOW
       await register(name, email, mobile, password); // Calls backend /auth/signup (generates OTP)
+
+      showToast("OTP sent to your email!", "success");
 
       // Navigate to OTP screen
       router.push({
@@ -79,23 +174,46 @@ export default function SignupScreen() {
     } catch (error: any) {
       console.error("Signup Error Details:", error);
       const errorMessage = error.response?.data?.message || error.message || t("error");
-      showAlert(t("signup_failed"), errorMessage);
+
+      // Specific error handling
+      if (errorMessage.toLowerCase().includes('already exists')) {
+        showToast("This email or mobile is already registered. Please login!", "error", 4000);
+      } else {
+        showToast(errorMessage, "error");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
+    // NATIVE FLOW: We use the authService which uses @react-native-google-signin/google-signin
+    // This gives the native "bottom sheet" popup.
+    if (Platform.OS !== 'web') {
+      try {
+        // Check native module status
+        // const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+        // await GoogleSignin.hasPlayServices(); // Optional check if needed here, but authService handles it.
+
+        // Call the NATIVE service
+        await signInWithGoogle();
+
+        // If we get here, it worked!
+        router.replace("/(tabs)");
+        return;
+
+      } catch (error: any) {
+        console.error("Native Google Login Error:", error);
+        Alert.alert("Login Failed", "Could not sign in with Google. Please try again.");
+        return;
+      }
+    }
+
+    // Web Fallback (Only for actual Web Browser)
     try {
-      setLoading(true);
-      await signInWithGoogle();
-      router.replace("/(tabs)");
-      // But let's assume AuthContext updates user state and redirects.
-    } catch (error: any) {
-      console.error("Google Sign-In Error:", error);
-      showAlert("Google Login Failed", error.message);
-    } finally {
-      setLoading(false);
+      await promptAsync();
+    } catch (e) {
+      console.log("Auth Session Prompt Error", e);
     }
   };
 
@@ -170,7 +288,7 @@ export default function SignupScreen() {
         <Text style={styles.divider}>OR</Text>
 
         {/* Apple */}
-        <TouchableOpacity style={styles.socialButton} onPress={() => showAlert("Coming Soon", "Apple Sign-In will be available soon!")}>
+        <TouchableOpacity style={styles.socialButton} onPress={() => showToast("Apple Sign-In coming soon!", "info")}>
           <FontAwesome name="apple" size={22} color="black" style={{ marginRight: 10 }} />
           <Text style={styles.socialText}>{t("continue_apple") || "Continue with Apple"}</Text>
         </TouchableOpacity>
@@ -182,7 +300,7 @@ export default function SignupScreen() {
         </TouchableOpacity>
 
         {/* Facebook */}
-        <TouchableOpacity style={styles.socialButton} onPress={() => showAlert("Coming Soon", "Facebook Sign-In will be available soon!")}>
+        <TouchableOpacity style={styles.socialButton} onPress={() => showToast("Facebook Sign-In coming soon!", "info")}>
           <View style={{
             width: 24,
             height: 24,
@@ -216,6 +334,7 @@ export default function SignupScreen() {
   );
 }
 
+// @ts-ignore
 const styles = StyleSheet.create({
   scrollContainer: {
     padding: 24,
@@ -243,10 +362,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12, // Reduced height a bit to match design usually
+    paddingVertical: 12,
     borderWidth: 1,
     borderColor: "#E6E6E6",
-    borderRadius: 30, // Rounded full
+    borderRadius: 30,
     marginBottom: 12,
     backgroundColor: 'white',
   },
@@ -258,7 +377,7 @@ const styles = StyleSheet.create({
   bottomText: {
     textAlign: "center",
     marginTop: 20,
-    fontSize: 16, // Matched other screens
+    fontSize: 16,
     color: "#6F6F6F",
     marginBottom: 40,
   },
@@ -267,3 +386,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+
+
