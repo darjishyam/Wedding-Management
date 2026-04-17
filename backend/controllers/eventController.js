@@ -6,15 +6,15 @@ const Wedding = require('../models/Wedding');
 // @access  Private
 exports.createEvent = async (req, res) => {
     try {
-        const { weddingId, name, date, time, venue, description } = req.body;
+        const { weddingId, name, date, time, venue, description, itinerary } = req.body;
 
-        // Verify wedding belongs to user
-        const wedding = await Wedding.findById(weddingId);
+        // Verify wedding belongs to user or they are a collaborator
+        const wedding = await Wedding.findOne({
+            _id: weddingId,
+            $or: [{ user: req.user._id }, { collaborators: req.user._id }]
+        });
         if (!wedding) {
-            return res.status(404).json({ message: 'Wedding not found' });
-        }
-        if (wedding.user.toString() !== req.user.id) {
-            return res.status(401).json({ message: 'Not authorized' });
+            return res.status(404).json({ message: 'Wedding not found or not authorized' });
         }
 
         const event = new Event({
@@ -23,7 +23,8 @@ exports.createEvent = async (req, res) => {
             date,
             time,
             venue,
-            description
+            description,
+            itinerary
         });
 
         const savedEvent = await event.save();
@@ -57,14 +58,17 @@ exports.getWeddingEvents = async (req, res) => {
 // @access  Private
 exports.updateEvent = async (req, res) => {
     try {
-        const { name, date, time, venue, description, status } = req.body;
+        const { name, date, time, venue, description, status, itinerary } = req.body;
 
         let event = await Event.findById(req.params.id);
         if (!event) return res.status(404).json({ message: 'Event not found' });
 
-        // Verify ownership via wedding check
-        const wedding = await Wedding.findById(event.wedding);
-        if (wedding.user.toString() !== req.user.id) {
+        // Verify ownership or collaborator access
+        const wedding = await Wedding.findOne({
+            _id: event.wedding,
+            $or: [{ user: req.user._id }, { collaborators: req.user._id }]
+        });
+        if (!wedding) {
             return res.status(401).json({ message: 'Not authorized' });
         }
 
@@ -75,6 +79,7 @@ exports.updateEvent = async (req, res) => {
         if (venue) event.venue = venue;
         if (description) event.description = description;
         if (status) event.status = status;
+        if (itinerary) event.itinerary = itinerary;
 
         await event.save();
         res.json(event);
@@ -88,56 +93,30 @@ exports.updateEvent = async (req, res) => {
 // @route   DELETE /api/events/:id
 // @access  Private
 exports.deleteEvent = async (req, res) => {
-    console.log(`\n[DELETE EVENT] Request received for ID: ${req.params.id}`);
-    console.log(`[DELETE EVENT] User ID from token: ${req.user ? req.user._id : 'Unknown'}`);
-
     try {
         const event = await Event.findById(req.params.id);
         if (!event) {
-            console.log(`[DELETE EVENT] Event not found for ID: ${req.params.id}`);
             return res.status(404).json({ message: 'Event not found' });
         }
 
-        console.log(`[DELETE EVENT] Event found: ${event.name} (Wedding ID: ${event.wedding})`);
-
-        // Check if wedding exists
-        const wedding = await Wedding.findById(event.wedding);
+        // Check if wedding exists and user has access
+        const wedding = await Wedding.findOne({
+            _id: event.wedding,
+            $or: [{ user: req.user._id }, { collaborators: req.user._id }]
+        });
         if (!wedding) {
-            console.log(`[DELETE EVENT] CRITICAL: Associated wedding ${event.wedding} not found.`);
-            // If wedding is missing, should we allow delete? 
-            // Ideally yes to clean up, but we can't verify ownership. 
-            // For now, let's allow it if we are desperate or block it. 
-            // Blocking is safer for now to avoid unauthorized random deletes if ID guessed.
-            return res.status(404).json({ message: 'Associated wedding not found, cannot verify ownership' });
-        }
-
-        console.log(`[DELETE EVENT] Wedding found. Owner: ${wedding.user.toString()}`);
-
-        if (wedding.user.toString() !== req.user.id) {
-            console.log(`[DELETE EVENT] Authorization Failed. Wedding Owner: ${wedding.user.toString()}, Request User: ${req.user.id}`);
-            return res.status(401).json({ message: `Not authorized. Owner: ${wedding.user.toString()}, You: ${req.user.id}` });
+            return res.status(401).json({ message: 'Not authorized to delete this event' });
         }
 
         await event.deleteOne();
-        console.log(`[DELETE EVENT] Event deleted from Events collection.`);
 
         // Remove from wedding array
-        const initialCount = wedding.events.length;
         wedding.events = wedding.events.filter(e => e.toString() !== req.params.id);
-
-        if (wedding.events.length !== initialCount) {
-            console.log(`[DELETE EVENT] Removed event from Wedding event list.`);
-        } else {
-            console.log(`[DELETE EVENT] Event ID was not found in Wedding's event list (inconsistency?).`);
-        }
-
         await wedding.save();
-        console.log(`[DELETE EVENT] Wedding saved.`);
 
         res.json({ message: 'Event removed' });
     } catch (err) {
-        console.error(`[DELETE EVENT] ERROR: ${err.message}`);
-        console.error(err);
-        res.status(500).json({ message: `Server Error: ${err.message}` });
+        console.error('Delete Event Error:', err.message);
+        res.status(500).json({ message: 'Server Error' });
     }
 };

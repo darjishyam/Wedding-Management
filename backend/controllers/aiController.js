@@ -2,6 +2,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Wedding = require('../models/Wedding');
 const Expense = require('../models/Expense');
 const Event = require('../models/Event');
+const Vendor = require('../models/Vendor');
 const axios = require('axios');
 
 // Initialize Gemini
@@ -9,7 +10,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Helper to find the best available model
 async function getBestModelName() {
-    let modelNames = ["gemini-1.5-flash", "gemini-pro", "gemini-1.0-pro"];
+    let modelNames = ["gemini-1.5-flash", "gemini-1.5-pro"];
     try {
         const fetch = global.fetch || require('node-fetch');
         const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`;
@@ -40,7 +41,7 @@ async function generateWithFallback(promptParts, logPrefix = "AI") {
 
     for (const name of modelNames) {
         try {
-            console.log(`${logPrefix}: Attempting to generate with model: ${name}`);
+            console.log(`\n[AI] Attempting ${logPrefix} with model: ${name}`);
             const model = genAI.getGenerativeModel({ model: name });
             const result = await model.generateContent(promptParts);
             const response = await result.response;
@@ -193,6 +194,12 @@ const chatWithAI = async (req, res) => {
             const eventList = await Event.find({ wedding: weddingId }).sort({ date: 1 });
             const eventContext = eventList.map(e => `- ${e.name} on ${new Date(e.date).toDateString()} at ${e.time || 'Time TBD'}`).join('\n');
 
+            // Fetch Vendors
+            const vendors = await Vendor.find({ wedding: weddingId });
+            const vendorContext = vendors.length > 0
+                ? vendors.map(v => `- ${v.name} (${v.category}): Total ₹${v.totalAmount}, Paid ₹${v.paidAmount}, Status: ${v.status}`).join('\n')
+                : "No vendors added yet.";
+
             context = `
             Context: Indian Wedding Planning.
             Wedding Details:
@@ -200,23 +207,34 @@ const chatWithAI = async (req, res) => {
             - Date: ${new Date(wedding.date).toDateString()}
             - Location: ${wedding.location}
             - Type: ${wedding.type}
-            - Budget: ₹${wedding.totalBudget} (Spent: ₹${totalSpent})
+            - Budget: ₹${wedding.totalBudget} (Spent so far: ₹${totalSpent})
             
             Current Event Schedule:
             ${eventContext || "No events planned yet."}
+
+            Vendor Payment Status:
+            ${vendorContext}
             `;
         }
+
+        console.log("--- AI CHAT DEBUG ---");
+        console.log("Wedding ID:", weddingId);
+        console.log("Context:\n", context);
+        console.log("-----------------------");
 
         const prompt = `
         ${context}
         
         User Query: "${message}"
         
-        Role: You are an expert Indian Wedding Planner Assistant. 
-        Answer the user's query professionally, concisely, and helpfully.
-        If the query is about budget, use the provided financial context.
-        If the query is generic, provide general expert advice.
-        Keep answers short (under 100 words) unless asked for a list.
+        Role: You are a versatile AI Assistant integrated into a Wedding Management app. 
+        While your primary expertise is as an expert Indian Wedding Planner, you should also be helpful with general queries or casual conversation from the user.
+        
+        CRITICAL: If the user asks about vendor payments, use the "Vendor Payment Status" section above. 
+        List the specific vendors that are "Pending" or "Partial" if they ask which ones are not done yet.
+        
+        Answer professionally, concisely, and helpfully.
+        Keep answers short (under 120 words) unless asked for a list.
         `;
 
         const text = await generateWithFallback(prompt, "AI Chat");
@@ -322,4 +340,104 @@ const askAI = async (req, res) => {
     }
 };
 
-module.exports = { getWeddingAdvice, generatePackageDescription, chatWithAI, getChatHistory, generateTimeline, askAI };
+const generateBudgetBreakdown = async (req, res) => {
+    try {
+        const { totalBudget, weddingId } = req.body;
+
+        if (!process.env.GEMINI_API_KEY) {
+            throw new Error("GEMINI_API_KEY is missing");
+        }
+
+        const wedding = await Wedding.findById(weddingId);
+        const weddingType = wedding ? wedding.type : "Indian";
+
+        const prompt = `
+        Act as a professional Indian Wedding Financial Planner.
+        The user wants to plan a wedding with a total budget of ₹${totalBudget}.
+        The wedding type is: ${weddingType}.
+        
+        Generate a detailed cost breakdown for this budget.
+        Use these categories strictly: Catering, Decoration, Photography, Venue, Makeup, Music, Other.
+        
+        Rules:
+        1. Venue should be around 25-30% of total.
+        2. Catering should be around 35-40%.
+        3. Ensure the total sum of "amount" fields exactly equals ₹${totalBudget}.
+        
+        Output strictly valid JSON array format WITHOUT markdown blocks.
+        Each object must have:
+        - "title" (e.g. "Premium Catering Services")
+        - "amount" (Number)
+        - "category" (Must be one of: Catering, Decoration, Photography, Venue, Makeup, Music, Other)
+        - "description" (Short 1-line reason why this amount was allocated)
+
+        Example:
+        [
+            {"title": "Grand Venue Booking", "amount": 250000, "category": "Venue", "description": "Includes hall and basic lighting."}
+        ]
+        `;
+
+        const text = await generateWithFallback(prompt, "AI Budget Suggestion");
+        const jsonString = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const suggestions = JSON.parse(jsonString);
+
+        res.json({ suggestions });
+
+    } catch (error) {
+        console.error("AI Budget Suggestion Error:", error);
+        res.status(500).json({ message: "Failed to generate budget breakdown", error: error.message });
+    }
+};
+
+const applyBudgetBreakdown = async (req, res) => {
+    console.log("[AI] Applying Budget. Wedding ID:", req.body.weddingId);
+    try {
+        const { weddingId, suggestions, totalBudget } = req.body;
+
+        if (!weddingId || !suggestions || !Array.isArray(suggestions)) {
+            console.error("[AI] Invalid apply-budget data:", { weddingId, totalBudget, suggestionCount: suggestions?.length });
+            return res.status(400).json({ message: "Invalid request data" });
+        }
+
+        // 1. Update Wedding Total Budget
+        const wedding = await Wedding.findById(weddingId);
+        if (!wedding) {
+            return res.status(404).json({ message: "Wedding not found" });
+        }
+        wedding.totalBudget = totalBudget;
+        await wedding.save();
+
+        // 2. Prepare Expenses
+        const expenseDocs = suggestions.map(s => ({
+            wedding: weddingId,
+            title: `AI: ${s.title}`,
+            amount: s.amount,
+            category: s.category,
+            date: new Date()
+        }));
+
+        // 3. Insert in Bulk
+        const results = await Expense.insertMany(expenseDocs);
+
+        res.json({
+            message: "Budget applied successfully!",
+            expensesAdded: results.length,
+            newTotalBudget: wedding.totalBudget
+        });
+
+    } catch (error) {
+        console.error("AI Budget Application Error:", error);
+        res.status(500).json({ message: "Failed to apply budget", error: error.message });
+    }
+};
+
+module.exports = { 
+    getWeddingAdvice, 
+    generatePackageDescription, 
+    chatWithAI, 
+    getChatHistory, 
+    generateTimeline, 
+    askAI,
+    generateBudgetBreakdown,
+    applyBudgetBreakdown
+};

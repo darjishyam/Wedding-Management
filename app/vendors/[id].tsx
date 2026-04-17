@@ -1,14 +1,18 @@
 import { useVendor } from "@/contexts/VendorContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as WebBrowser from 'expo-web-browser';
+import api from "@/services/api";
 
 export default function VendorDetailScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { vendors, addPaymentToVendor } = useVendor();
+    const { user } = useAuth();
 
     const vendor = vendors.find(v => v._id === id);
 
@@ -16,6 +20,7 @@ export default function VendorDetailScreen() {
     const [amount, setAmount] = useState('');
     const [note, setNote] = useState('');
     const [mode, setMode] = useState('Cash'); // Cash, UPI, Online
+    const [isProcessing, setIsProcessing] = useState(false);
 
     if (!vendor) {
         return (
@@ -34,6 +39,12 @@ export default function VendorDetailScreen() {
             return;
         }
 
+        if (mode === 'Online') {
+            handleRazorpayPayment();
+            return;
+        }
+
+        setIsProcessing(true);
         try {
             await addPaymentToVendor(vendor._id, Number(amount), mode, note);
             setPaymentModalVisible(false);
@@ -42,6 +53,46 @@ export default function VendorDetailScreen() {
             Alert.alert("Success", "Payment recorded successfully!");
         } catch (error: any) {
             Alert.alert("Error", error.message || "Failed to add payment.");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleRazorpayPayment = async () => {
+        setIsProcessing(true);
+        try {
+            // 1. Create Order on Backend
+            const orderRes = await api.post('/payment/order', {
+                amount: Number(amount),
+                currency: 'INR',
+                vendorId: vendor._id
+            });
+
+            const orderData = orderRes.data;
+            if (orderData && orderData.id) {
+                // 2. Open Hosted Checkout
+                const checkoutUrl = `${api.defaults.baseURL}/payment/razorpay-checkout?orderId=${orderData.id}&amount=${orderData.amount}&vendorId=${vendor._id}&vendorAmount=${amount}&userId=${user?._id}`;
+                
+                console.log("[Razorpay] Opening Vendor Checkout:", checkoutUrl);
+                await WebBrowser.openBrowserAsync(checkoutUrl);
+
+                // 3. After returning
+                Alert.alert(
+                    "Payment Done?",
+                    "If you completed the payment, return to the vendor list to see updated balance.",
+                    [{
+                        text: "Check Status", onPress: () => {
+                            router.replace('/vendors' as any);
+                        }
+                    }]
+                );
+            }
+        } catch (error: any) {
+            console.error("Razorpay Init Error:", error);
+            Alert.alert("Error", "Could not start Razorpay checkout.");
+        } finally {
+            setIsProcessing(false);
+            setPaymentModalVisible(false);
         }
     };
 
@@ -196,8 +247,18 @@ export default function VendorDetailScreen() {
                             />
                         </View>
 
-                        <TouchableOpacity style={styles.submitBtn} onPress={handleAddPayment}>
-                            <Text style={styles.submitBtnText}>Confirm Payment</Text>
+                        <TouchableOpacity 
+                            style={[styles.submitBtn, isProcessing && { opacity: 0.7 }]} 
+                            onPress={handleAddPayment}
+                            disabled={isProcessing}
+                        >
+                            {isProcessing ? (
+                                <ActivityIndicator color="#FFF" />
+                            ) : (
+                                <Text style={styles.submitBtnText}>
+                                    {mode === 'Online' ? 'Proceed to Razorpay' : 'Confirm Payment'}
+                                </Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </View>

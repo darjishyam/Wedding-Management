@@ -5,10 +5,16 @@ const Wedding = require('../models/Wedding');
 // @route   POST /api/vendors
 // @access  Private
 const addVendor = async (req, res) => {
-    const { name, category, contact, totalAmount, paidAmount } = req.body;
+    const { name, category, contact, totalAmount, paidAmount, weddingId } = req.body;
 
     try {
-        const wedding = await Wedding.findOne({ user: req.user._id });
+        let wedding;
+        if (weddingId) {
+            wedding = await Wedding.findOne({ _id: weddingId, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
+        } else {
+            wedding = await Wedding.findOne({ $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
+        }
+
         if (!wedding) {
             return res.status(404).json({ message: 'Wedding not found' });
         }
@@ -42,12 +48,18 @@ const addVendor = async (req, res) => {
 // @access  Private
 const getVendors = async (req, res) => {
     try {
-        const wedding = await Wedding.findOne({ user: req.user._id });
-        if (!wedding) {
-            return res.status(404).json({ message: 'Wedding not found' });
+        let weddingId = req.query.weddingId;
+
+        if (!weddingId) {
+            const wedding = await Wedding.findOne({ $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
+            if (!wedding) return res.json([]);
+            weddingId = wedding._id;
+        } else {
+            const wedding = await Wedding.findOne({ _id: weddingId, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
+            if (!wedding) return res.status(404).json({ message: 'Wedding not found' });
         }
 
-        const vendors = await Vendor.find({ wedding: wedding._id }).sort({ createdAt: -1 });
+        const vendors = await Vendor.find({ wedding: weddingId }).sort({ createdAt: -1 });
         res.json(vendors);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -67,8 +79,8 @@ const updateVendor = async (req, res) => {
             return res.status(404).json({ message: 'Vendor not found' });
         }
 
-        // Check if user owns the wedding
-        const wedding = await Wedding.findOne({ _id: vendor.wedding, user: req.user._id });
+        // Check if user owns or collaborates on the wedding
+        const wedding = await Wedding.findOne({ _id: vendor.wedding, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
         if (!wedding) {
             return res.status(401).json({ message: 'Not authorized' });
         }
@@ -116,8 +128,8 @@ const deleteVendor = async (req, res) => {
             return res.status(404).json({ message: 'Vendor not found' });
         }
 
-        // Check if user owns the wedding
-        const wedding = await Wedding.findOne({ _id: vendor.wedding, user: req.user._id });
+        // Check if user owns or collaborates on the wedding
+        const wedding = await Wedding.findOne({ _id: vendor.wedding, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
         if (!wedding) {
             return res.status(401).json({ message: 'Not authorized' });
         }
@@ -142,7 +154,7 @@ const addPayment = async (req, res) => {
         }
 
         // Auth Check
-        const wedding = await Wedding.findOne({ _id: vendor.wedding, user: req.user._id });
+        const wedding = await Wedding.findOne({ _id: vendor.wedding, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
         if (!wedding) {
             return res.status(401).json({ message: 'Not authorized' });
         }

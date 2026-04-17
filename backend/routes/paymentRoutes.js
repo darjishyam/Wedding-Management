@@ -7,9 +7,9 @@ router.post('/order', protect, createOrder);
 router.post('/verify', protect, verifyPayment);
 router.post('/simulate', protect, require('../controllers/paymentController').simulatePayment);
 
-// PayPal Routes
-router.post('/paypal/create', protect, require('../controllers/paymentController').createPayPalPayment);
-router.get('/paypal/success', require('../controllers/paymentController').executePayPalPayment);
-router.get('/paypal/cancel', require('../controllers/paymentController').cancelPayPalPayment);
+// Razorpay Hosted Routes
+router.get('/razorpay-checkout', require('../controllers/paymentController').razorpayCheckoutPage);
+router.get('/razorpay/success', require('../controllers/paymentController').razorpaySuccessCallback);
+router.get('/razorpay/cancel', (req, res) => res.send("Payment Cancelled. You can return to the app."));
 
 module.exports = router;

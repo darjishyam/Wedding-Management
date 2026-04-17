@@ -11,6 +11,10 @@ const paymentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Wedding'
     },
+    vendor: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Vendor'
+    },
     amount: {
         type: Number,
         required: true,
@@ -36,10 +40,8 @@ const paymentSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    }
+}, {
+    timestamps: true
 });
 
 module.exports = mongoose.model('Payment', paymentSchema);

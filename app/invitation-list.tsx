@@ -1,13 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRouter } from "expo-router";
-import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useGuest } from "@/contexts/GuestContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PDFService } from "@/services/PDFService";
+import { useWedding } from "@/contexts/WeddingContext";
 import { useState } from "react";
+import { Modal, TextInput, ActivityIndicator } from "react-native";
 
 export default function InvitationListScreen() {
   const router = useRouter();
@@ -21,9 +23,18 @@ export default function InvitationListScreen() {
       router.replace('/(tabs)');
     }
   };
-  const { guests, isLoading, updateGuestStatus } = useGuest();
+  const { guests, isLoading, updateGuestStatus, updateGuest, deleteGuest } = useGuest();
   const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState("All");
+
+  // Edit State
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingGuest, setEditingGuest] = useState<any>(null);
+  const [editName, setEditName] = useState("");
+  const [editCount, setEditCount] = useState("");
+  const [editCity, setEditCity] = useState("");
+  const [editCategory, setEditCategory] = useState("Other");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleAddGuest = () => {
     if (!user) {
@@ -55,6 +66,75 @@ export default function InvitationListScreen() {
 
     const html = PDFService.generateGuestListHTML(guests, guests.length);
     await PDFService.generateAndSharePDF(html, "GuestList");
+  };
+
+  const handleShareRSVP = async (guest: any) => {
+    try {
+      // In a real app, this would be your production URL
+      const rsvpLink = `exp://localhost:8081/guests/rsvp/${guest.rsvpToken}`;
+      const message = `Namaste ${guest.name}! 🙏\n\nWe are delighted to invite you to our wedding. Please confirm your presence via this link:\n${rsvpLink}\n\nWaiting to see you there! ❤️`;
+      
+      await Share.share({
+        message,
+        url: rsvpLink, // iOS specific
+        title: 'RSVP Invitation'
+      });
+    } catch (error: any) {
+      Alert.alert("Error", "Could not share the RSVP link.");
+    }
+  };
+
+  const handleEditPress = (guest: any) => {
+    setEditingGuest(guest);
+    setEditName(guest.name);
+    setEditCount(guest.familyCount.toString());
+    setEditCity(guest.cityVillage);
+    setEditCategory(guest.category || 'Other');
+    setEditModalVisible(true);
+  };
+
+  const handleUpdateGuest = async () => {
+    if (!editName || !editCount || !editCity) {
+      Alert.alert("Error", "Please fill all required fields");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await updateGuest(editingGuest._id, {
+        name: editName,
+        familyCount: parseInt(editCount),
+        cityVillage: editCity,
+        category: editCategory
+      });
+      setEditModalVisible(false);
+      Alert.alert("Success", "Guest updated successfully");
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to update guest");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteGuest = (id: string) => {
+    Alert.alert(
+      "Delete Guest",
+      "Are you sure you want to remove this guest?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteGuest(id);
+            } catch (error: any) {
+              Alert.alert("Error", "Failed to delete guest");
+            }
+          }
+        }
+      ]
+    );
   };
 
   // If no guests, show empty state
@@ -136,9 +216,19 @@ export default function InvitationListScreen() {
               <Text style={styles.guestDetails}>{guest.cityVillage} • {guest.familyCount} Family Members</Text>
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                <Text style={[styles.statusText, { color: guest.status === 'Invited' || guest.status === 'Confirmed' ? 'green' : '#666' }]}>
-                  {guest.status || 'Not Invited'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <Text style={[styles.statusText, { color: guest.status === 'Invited' || guest.status === 'Confirmed' ? 'green' : '#666' }]}>
+                    {guest.status || 'Not Invited'}
+                  </Text>
+                  
+                  {/* Edit/Delete Actions */}
+                  <TouchableOpacity onPress={() => handleEditPress(guest)}>
+                    <Ionicons name="create-outline" size={18} color="#007AFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDeleteGuest(guest._id)}>
+                    <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
 
                 {/* Invite Action Button */}
                 {guest.status !== 'Invited' && guest.status !== 'Confirmed' ? (
@@ -154,11 +244,97 @@ export default function InvitationListScreen() {
                     <Text style={{ color: 'green', fontSize: 12, marginLeft: 4 }}>Sent</Text>
                   </View>
                 )}
+
+                {/* RSVP Link Action */}
+                <TouchableOpacity
+                  style={styles.rsvpLinkBtn}
+                  onPress={() => handleShareRSVP(guest)}
+                >
+                  <Ionicons name="share-social-outline" size={14} color="#8A0030" />
+                  <Text style={styles.rsvpLinkBtnText}>RSVP Link</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
         ))}
       </ScrollView>
+
+      {/* Edit Guest Modal */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Guest</Text>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView>
+              <Text style={styles.inputLabel}>FullName</Text>
+              <TextInput
+                style={styles.input}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Guest Name"
+              />
+
+              <Text style={styles.inputLabel}>Family Count</Text>
+              <TextInput
+                style={styles.input}
+                value={editCount}
+                onChangeText={setEditCount}
+                placeholder="Number of members"
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.inputLabel}>City / Village Name</Text>
+              <TextInput
+                style={styles.input}
+                value={editCity}
+                onChangeText={setEditCity}
+                placeholder="Location"
+              />
+
+              <Text style={styles.inputLabel}>Category</Text>
+              <View style={styles.categoryContainer}>
+                {['Groom Family', 'Bride Family', 'Friend', 'Work', 'Other'].map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[
+                      styles.categoryChip,
+                      editCategory === cat && styles.categoryChipSelected
+                    ]}
+                    onPress={() => setEditCategory(cat)}
+                  >
+                    <Text style={[
+                      styles.categoryChipText,
+                      editCategory === cat && styles.categoryChipTextSelected
+                    ]}>{cat}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleUpdateGuest}
+                disabled={isUpdating}
+              >
+                {isUpdating ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Floating Action Button for easy addition */}
       <TouchableOpacity style={styles.fab} onPress={handleAddGuest}>
@@ -187,9 +363,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   navTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#000",
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#8A0030", // Deep Maroon
   },
   placeholder: {
     width: 40,
@@ -278,14 +454,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 30,
     right: 20,
-    backgroundColor: '#000',
+    backgroundColor: '#8A0030', // Deep Maroon
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
+    elevation: 10,
+    shadowColor: '#8A0030',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -341,6 +517,94 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 12,
     fontWeight: '600'
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  input: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 16,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  categoryChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#DDD',
+  },
+  categoryChipSelected: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+  },
+  categoryChipText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  categoryChipTextSelected: {
+    color: '#FFF',
+  },
+  saveButton: {
+    backgroundColor: '#000',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 32,
+    marginBottom: 16,
+  },
+  saveButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  rsvpLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(138, 0, 48, 0.2)',
+    backgroundColor: 'rgba(138, 0, 48, 0.05)',
+  },
+  rsvpLinkBtnText: {
+    color: '#8A0030',
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 4,
   }
 });
 

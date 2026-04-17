@@ -4,7 +4,9 @@ import {
   createWedding as createAction,
   refreshWeddingData as refreshAction,
   switchWedding as switchAction,
-  updateBudget as updateBudgetAction
+  updateBudget as updateBudgetAction,
+  addCollaborator as addCollaboratorAction,
+  removeCollaborator as removeCollaboratorAction
 } from '../store/slices/weddingSlice';
 
 export function useWedding() {
@@ -56,6 +58,14 @@ export function useWedding() {
     updateWedding: async (id: string, data: any) => {
       const { updateWedding: updateAction } = require('../store/slices/weddingSlice');
       await dispatch(updateAction({ id, ...data })).unwrap();
+    },
+    addCollaborator: async (email: string) => {
+      if (!weddingData?._id) return;
+      await dispatch(addCollaboratorAction({ id: weddingData._id, email })).unwrap();
+    },
+    removeCollaborator: async (userId: string) => {
+      if (!weddingData?._id) return;
+      await dispatch(removeCollaboratorAction({ id: weddingData._id, userId })).unwrap();
     }
   };
 }

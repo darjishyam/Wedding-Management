@@ -6,7 +6,7 @@ import { useToast } from "@/contexts/ToastContext";
 import { authService } from "@/services/authService";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 
 export default function ForgotPasswordScreen() {
     const router = useRouter();
@@ -30,13 +30,17 @@ export default function ForgotPasswordScreen() {
         setLoading(true);
         try {
             await authService.forgotPassword(email);
-            showToast("OTP sent to your email!", "success");
-
-            // Navigate to Reset Password Screen with email param
-            router.push({
-                pathname: "/reset-password",
-                params: { email }
-            });
+            
+            Alert.alert(
+                "OTP Sent",
+                "A 6-digit code has been sent to your email. Please check your inbox (and spam folder).",
+                [{ text: "OK", onPress: () => {
+                    router.push({
+                        pathname: "/reset-password",
+                        params: { email }
+                    });
+                }}]
+            );
         } catch (error: any) {
             const msg = error.message || "Failed to send OTP";
             showToast(msg, "error");

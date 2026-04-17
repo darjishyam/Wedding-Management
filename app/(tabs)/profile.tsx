@@ -5,7 +5,7 @@ import { useWedding } from "@/contexts/WeddingContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Image, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
@@ -13,9 +13,12 @@ export default function ProfileScreen() {
   const { user, logout, reloadUser } = useAuth();
   const { resetOnboarding } = useOnboarding();
   const { language, setLanguage, t } = useLanguage();
-  const { weddingData, updateWedding } = useWedding();
+  const { weddingData, updateWedding, addCollaborator, removeCollaborator } = useWedding();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showCollabModal, setShowCollabModal] = useState(false);
+  const [collabEmail, setCollabEmail] = useState("");
+  const [isCollabLoading, setIsCollabLoading] = useState(false);
   const [tempStatus, setTempStatus] = useState(weddingData?.status || "Planned");
 
   const handleUpdateStatus = async () => {
@@ -27,6 +30,41 @@ export default function ProfileScreen() {
     } catch (e) {
       Alert.alert("Error", "Failed to update status");
     }
+  };
+
+  const handleAddCollaborator = async () => {
+    if (!collabEmail.trim()) return;
+    setIsCollabLoading(true);
+    try {
+      await addCollaborator(collabEmail.trim());
+      setCollabEmail("");
+      Alert.alert(t("success"), "Collaborator added successfully!");
+    } catch (e: any) {
+      Alert.alert(t("error"), e.message || "Failed to add collaborator");
+    } finally {
+      setIsCollabLoading(false);
+    }
+  };
+
+  const handleRemoveCollaborator = async (userId: string) => {
+    Alert.alert(
+      "Remove Collaborator",
+      "Are you sure you want to remove this person?",
+      [
+        { text: t("cancel"), style: "cancel" },
+        {
+          text: t("remove"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await removeCollaborator(userId);
+            } catch (e: any) {
+              Alert.alert(t("error"), e.message || "Failed to remove collaborator");
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -136,6 +174,25 @@ export default function ProfileScreen() {
               <Text style={styles.changeButtonText}>{t("change")}</Text>
             </View>
           </TouchableOpacity>
+
+          {/* Collaborators */}
+          {user && weddingData && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setShowCollabModal(true)}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.iconContainer, { backgroundColor: "#F5F5F5" }]}>
+                  <Ionicons name="people-outline" size={20} color="#000" />
+                </View>
+                <View style={styles.menuItemTextContainer}>
+                  <Text style={styles.menuItemText}>{t("collaborators")}</Text>
+                  <Text style={styles.menuItemSubtext}>{t("manage_collaborators")}</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+            </TouchableOpacity>
+          )}
 
           {/* Terms of Service */}
           <TouchableOpacity
@@ -330,6 +387,113 @@ export default function ProfileScreen() {
                 onPress={handleUpdateStatus}
               >
                 <Text style={styles.saveButtonText}>{t("save")}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Collaborators Modal */}
+      <Modal
+        visible={showCollabModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCollabModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowCollabModal(false)}
+          />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t("collaborators")}</Text>
+              <TouchableOpacity onPress={() => setShowCollabModal(false)}>
+                <Ionicons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 400, paddingHorizontal: 20 }}>
+              {/* Add Input */}
+              <View style={{ marginTop: 20, marginBottom: 10 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 8 }}>{t("invite_partner")}</Text>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <TextInput
+                    style={{
+                      flex: 1,
+                      height: 50,
+                      borderWidth: 1,
+                      borderColor: '#E6E6E6',
+                      borderRadius: 12,
+                      paddingHorizontal: 15,
+                    }}
+                    placeholder={t("enter_partner_email")}
+                    value={collabEmail}
+                    onChangeText={setCollabEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: '#000',
+                      paddingHorizontal: 20,
+                      borderRadius: 12,
+                      justifyContent: 'center',
+                      opacity: isCollabLoading ? 0.7 : 1
+                    }}
+                    onPress={handleAddCollaborator}
+                    disabled={isCollabLoading}
+                  >
+                    {isCollabLoading ? (
+                      <ActivityIndicator size="small" color="#FFF" />
+                    ) : (
+                      <Text style={{ color: '#FFF', fontWeight: 'bold' }}>{t("save")}</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* List */}
+              <View style={{ marginTop: 20 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 15 }}>Current Collaborators</Text>
+                {weddingData?.collaborators && weddingData.collaborators.length > 0 ? (
+                  weddingData.collaborators.map((collab: any) => (
+                    <View key={collab._id} style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingVertical: 12,
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#F0F0F0'
+                    }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Image
+                          source={collab.profileImage ? { uri: collab.profileImage } : require("../../assets/images/empty_guest.png")}
+                          style={{ width: 40, height: 40, borderRadius: 20, marginRight: 12 }}
+                        />
+                        <View>
+                          <Text style={{ fontWeight: '600' }}>{collab.name}</Text>
+                          <Text style={{ fontSize: 12, color: '#666' }}>{collab.email}</Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity onPress={() => handleRemoveCollaborator(collab._id)}>
+                        <Text style={{ color: '#FF3B30', fontWeight: '600' }}>{t("remove")}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={{ color: '#999', textAlign: 'center', marginTop: 10 }}>{t("no_collaborators")}</Text>
+                )}
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowCollabModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
               </TouchableOpacity>
             </View>
           </View>

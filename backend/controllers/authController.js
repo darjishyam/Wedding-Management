@@ -5,6 +5,11 @@ const Wedding = require('../models/Wedding');
 const Guest = require('../models/Guest');
 const Expense = require('../models/Expense');
 const Shagun = require('../models/Shagun');
+const Vendor = require('../models/Vendor');
+const Event = require('../models/Event');
+const Task = require('../models/Task');
+const ChatHistory = require('../models/ChatHistory');
+const Payment = require('../models/Payment');
 const sendEmail = require('../utils/sendEmail');
 
 const generateToken = (id) => {
@@ -207,7 +212,8 @@ const verifyOtp = async (req, res) => {
 // @route   POST /api/auth/login
 // @access  Public
 const loginUser = async (req, res) => {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    if (email) email = email.toLowerCase();
 
     // Basic validation
     if (!email || !password) {
@@ -328,16 +334,33 @@ const deleteAccount = async (req, res) => {
     try {
         const userId = req.user._id;
 
-        // Delete all associated data
+        // Find all weddings owned by this user
+        const weddings = await Wedding.find({ user: userId });
+        const weddingIds = weddings.map(w => w._id);
+
+        // Delete all data linked to those weddings
+        await Guest.deleteMany({ wedding: { $in: weddingIds } });
+        await Expense.deleteMany({ wedding: { $in: weddingIds } });
+        await Shagun.deleteMany({ wedding: { $in: weddingIds } });
+        await Vendor.deleteMany({ wedding: { $in: weddingIds } });
+        await Event.deleteMany({ wedding: { $in: weddingIds } });
+        await Task.deleteMany({ wedding: { $in: weddingIds } });
+        await ChatHistory.deleteMany({ wedding: { $in: weddingIds } });
+        await Payment.deleteMany({ user: userId });
+
+        // Delete weddings
         await Wedding.deleteMany({ user: userId });
-        await Guest.deleteMany({ user: userId });
-        await Expense.deleteMany({ user: userId });
-        await Shagun.deleteMany({ user: userId });
+
+        // Remove user from any collaborator lists
+        await Wedding.updateMany(
+            { collaborators: userId },
+            { $pull: { collaborators: userId } }
+        );
 
         // Delete user
         await User.findByIdAndDelete(userId);
 
-        res.json({ message: 'User deleted' });
+        res.json({ message: 'Account and all associated data deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -414,7 +437,8 @@ const updateProfile = async (req, res) => {
 // @route   POST /api/auth/forgot-password
 // @access  Public
 const forgotPassword = async (req, res) => {
-    const { email } = req.body;
+    const { email: rawEmail } = req.body;
+    const email = rawEmail ? rawEmail.toLowerCase() : '';
 
     try {
         const user = await User.findOne({ email });
@@ -431,6 +455,8 @@ const forgotPassword = async (req, res) => {
         user.otp = otp;
         user.otpExpires = otpExpires;
         await user.save();
+
+        console.log(`\n[Forgot Password] OTP generated for ${email}: ${otp}`);
 
         // Send OTP via Email
         const message = `You requested a password reset. Your OTP is: ${otp}\n\nIt is valid for 10 minutes.`;
@@ -458,24 +484,40 @@ const forgotPassword = async (req, res) => {
 // @route   POST /api/auth/reset-password
 // @access  Public
 const resetPassword = async (req, res) => {
-    const { email, otp, newPassword } = req.body;
+    const { email: rawEmail, otp, newPassword } = req.body;
+    const email = rawEmail ? rawEmail.toLowerCase() : '';
 
     try {
+        console.log(`\n--- RESET PASSWORD ATTEMPT ---`);
+        console.log(`Email: ${email}`);
+        console.log(`Received OTP: [${otp}]`);
+
         const user = await User.findOne({ email });
 
         if (!user) {
+            console.log(`Error: User not found for ${email}`);
             return res.status(404).json({ message: 'User not found' });
         }
 
+        console.log(`Stored OTP: [${user.otp}]`);
+        console.log(`Stored Expiry: ${user.otpExpires}`);
+        console.log(`Current Time: ${Date.now()}`);
+
         if (!user.otp || !user.otpExpires) {
+            console.log(`Error: No OTP or Expiry found in DB for this user`);
             return res.status(400).json({ message: 'Invalid request. Please request a new OTP.' });
         }
 
-        if (String(user.otp).trim() !== String(otp).trim()) {
+        const isMatch = String(user.otp).trim() === String(otp).trim();
+        const isExpired = user.otpExpires < Date.now();
+
+        console.log(`Match: ${isMatch}, Expired: ${isExpired}`);
+
+        if (!isMatch) {
             return res.status(400).json({ message: 'Invalid OTP' });
         }
 
-        if (user.otpExpires < Date.now()) {
+        if (isExpired) {
             return res.status(400).json({ message: 'OTP has expired' });
         }
 

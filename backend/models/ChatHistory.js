@@ -17,10 +17,6 @@ const chatHistorySchema = mongoose.Schema({
     message: {
         type: String,
         required: true
-    },
-    timestamp: {
-        type: Date,
-        default: Date.now
     }
 }, {
     timestamps: true

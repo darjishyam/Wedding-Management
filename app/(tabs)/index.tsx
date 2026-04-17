@@ -245,43 +245,45 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
       {/* ... existing Modals ... */}
 
       <View style={styles.headerArea}>
-        <View style={styles.headerArea}>
-          <Text style={styles.headerTitle}>Wedding MS</Text>
+        <Text style={styles.headerTitle}>{t("shagun") || "Wedding MS"}</Text>
 
-          <View style={styles.namesRowHeader}>
-            <View style={styles.profileImagesContainer}>
-              <TouchableOpacity onPress={() => handleUpdateImage(false)} activeOpacity={0.8}>
+        <View style={styles.namesRowHeader}>
+          <View style={styles.profileImagesContainer}>
+            <TouchableOpacity onPress={() => handleUpdateImage(false)} activeOpacity={0.8}>
+              <View style={styles.imageRing}>
                 <Image
                   source={weddingData.brideImage ? { uri: weddingData.brideImage } : require('../../assets/images/empty_guest.png')}
                   style={[styles.profileImage, styles.brideImage]}
                 />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleUpdateImage(true)} activeOpacity={0.8}>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleUpdateImage(true)} activeOpacity={0.8}>
+              <View style={[styles.imageRing, { marginLeft: -15 }]}>
                 <Image
                   source={weddingData.groomImage ? { uri: weddingData.groomImage } : require('../../assets/images/empty_guest.png')}
                   style={[styles.profileImage, styles.groomImage]}
                 />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.nameDateContainer}>
+            <View style={styles.namesRow}>
+              <Text style={styles.brideName}>{weddingData.brideName}</Text>
+              <Ionicons name="heart" size={16} color="#8A0030" style={styles.ringIcon} />
+              <Text style={styles.groomName}>{weddingData.groomName}</Text>
+              <TouchableOpacity onPress={onSwitch} style={styles.dropdownButton}>
+                <Ionicons name="chevron-down" size={20} color="#8A0030" />
               </TouchableOpacity>
             </View>
-
-            <View style={styles.nameDateContainer}>
-              <View style={styles.namesRow}>
-                <Text style={styles.brideName}>{weddingData.brideName}</Text>
-                <Ionicons name="heart-outline" size={16} color="#000" style={styles.ringIcon} />
-                <Text style={styles.groomName}>{weddingData.groomName}</Text>
-                <TouchableOpacity onPress={onSwitch} style={styles.dropdownButton}>
-                  <Ionicons name="chevron-down" size={20} color="#000" />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.eventDate}>
-                {formatDate(new Date(weddingData.date))} • {weddingData.type || 'Traditional'}
+            <Text style={styles.eventDate}>
+              {formatDate(new Date(weddingData.date))} • <Text style={{ color: '#D4AF37', fontWeight: 'bold' }}>{weddingData.type || 'Traditional'}</Text>
+            </Text>
+            {weddingData.location ? (
+              <Text style={styles.eventLocation}>
+                <Ionicons name="location" size={12} color="#8A0030" /> {weddingData.location}
               </Text>
-              {weddingData.location ? (
-                <Text style={styles.eventLocation}>
-                  <Ionicons name="location-outline" size={12} color="#888" /> {weddingData.location}
-                </Text>
-              ) : null}
-            </View>
+            ) : null}
           </View>
         </View>
       </View>
@@ -301,14 +303,14 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
           <StatBox
             label={t("people")}
             value={shagunEntries.length}
-            icon="person"
-            style={{ backgroundColor: "rgba(244, 222, 156, 0.6)" }}
+            icon="people"
+            style={{ backgroundColor: "rgba(255, 255, 255, 0.4)" }}
           />
           <StatBox
             label={t("total_chandlo")}
             value={`₹ ${totalChandlo.toLocaleString()}`}
-            icon="cash"
-            style={{ backgroundColor: "rgba(244, 222, 156, 0.6)" }}
+            icon="card-outline"
+            style={{ backgroundColor: "rgba(255, 255, 255, 0.4)" }}
           />
         </DashboardCard>
 
@@ -346,15 +348,15 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
               label={t("total_budget")}
               value={`₹ ${totalBudget.toLocaleString()}`}
               imageSource={require("../../assets/images/dollar-circle.png")}
-              style={{ backgroundColor: "hsla(349, 63%, 86%, 0.60)" }}
-              imageStyle={{ width: 35, height: 35, tintColor: '#000' }}
+              style={{ backgroundColor: "rgba(255, 255, 255, 0.4)" }}
+              imageStyle={{ width: 30, height: 30, tintColor: '#8A0030' }}
             />
             <StatBox
               label={t("spent")}
               value={`₹ ${totalSpent.toLocaleString()}`}
               imageSource={require("../../assets/images/money-send.png")}
-              style={{ backgroundColor: "rgba(242, 198, 206, 0.6)" }}
-              imageStyle={{ width: 35, height: 35, tintColor: '#000' }}
+              style={{ backgroundColor: "rgba(255, 255, 255, 0.4)" }}
+              imageStyle={{ width: 30, height: 30, tintColor: '#8A0030' }}
             />
           </DashboardCard>
         )}
@@ -371,14 +373,15 @@ function WeddingDashboard({ weddingData, onSwitch }: { weddingData: { groomName:
             label={t("invitation_sent")}
             value={guests.filter((g: any) => g.status === 'Invited' || g.status === 'Confirmed').length}
             imageSource={require("../../assets/images/direct-send.png")}
-            style={{ backgroundColor: "rgba(203, 230, 248, 0.6)" }}
+            style={{ backgroundColor: "rgba(255, 255, 255, 0.4)" }}
+            imageStyle={{ width: 30, height: 30, tintColor: '#0070BA' }}
           />
           <StatBox
             label={t("total_guest")}
             value={guests.reduce((sum: any, guest: any) => sum + (guest.familyCount || 1), 0)}
             imageSource={require("../../assets/images/empty_guest.png")}
-            style={{ backgroundColor: "rgba(203, 230, 248, 0.6)" }}
-            imageStyle={{ width: 35, height: 35, tintColor: '#000' }}
+            style={{ backgroundColor: "rgba(255, 255, 255, 0.4)" }}
+            imageStyle={{ width: 30, height: 30, tintColor: '#0070BA' }}
           />
         </DashboardCard>
 
@@ -599,23 +602,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginRight: 10,
   },
+  imageRing: {
+    padding: 2,
+    borderRadius: 30,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#D4AF37',
+  },
   profileImage: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderWidth: 2,
-    borderColor: "#FFF",
   },
   brideImage: {
     zIndex: 2,
   },
   groomImage: {
-    marginLeft: -15, // Overlap
     zIndex: 1,
   },
   nameDateContainer: {
     flex: 1,
     justifyContent: "center",
+    marginLeft: 10,
   },
   namesRow: {
     flexDirection: "row",
@@ -623,26 +631,28 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   brideName: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "800",
     color: "#000",
   },
   ringIcon: {
     marginHorizontal: 8,
   },
   groomName: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "800",
     color: "#000",
   },
   eventDate: {
-    fontSize: 13,
-    color: "#888",
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
   },
   eventLocation: {
     fontSize: 12,
-    color: "#666",
+    color: "#8A0030",
     marginTop: 2,
+    fontWeight: "700",
   },
   dropdownButton: {
     padding: 4,

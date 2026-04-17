@@ -1,5 +1,6 @@
 const Guest = require('../models/Guest');
 const Wedding = require('../models/Wedding');
+const crypto = require('crypto');
 
 // @desc    Add a guest
 // @route   POST /api/guests
@@ -10,14 +11,16 @@ const addGuest = async (req, res) => {
     try {
         let wedding;
         if (weddingId) {
-            wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+            wedding = await Wedding.findOne({ _id: weddingId, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
         } else {
-            wedding = await Wedding.findOne({ user: req.user._id });
+            wedding = await Wedding.findOne({ $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
         }
 
         if (!wedding) {
             return res.status(404).json({ message: 'Wedding not found' });
         }
+
+        const rsvpToken = crypto.randomBytes(8).toString('hex');
 
         const guest = await Guest.create({
             wedding: wedding._id,
@@ -26,7 +29,8 @@ const addGuest = async (req, res) => {
             familyCount,
             category: category || 'Other',
             status: status || 'Not Invited',
-            assignedEvents: assignedEvents || []
+            assignedEvents: assignedEvents || [],
+            rsvpToken
         });
 
         res.status(201).json(guest);
@@ -43,12 +47,12 @@ const getGuests = async (req, res) => {
         let weddingId = req.query.weddingId;
 
         if (!weddingId) {
-            const wedding = await Wedding.findOne({ user: req.user._id });
+            const wedding = await Wedding.findOne({ $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
             if (!wedding) return res.json([]);
             weddingId = wedding._id;
         } else {
-            // Verify ownership
-            const wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+            // Verify ownership or collaborator access
+            const wedding = await Wedding.findOne({ _id: weddingId, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
             if (!wedding) return res.status(404).json({ message: 'Wedding not found' });
         }
 
@@ -70,8 +74,11 @@ const updateGuest = async (req, res) => {
             return res.status(404).json({ message: 'Guest not found' });
         }
 
-        // Verify user owns the wedding that owns the guest
-        // (Optional strictly speaking if we trust ID, but good practice. skipped for brevity to match style or add basic check)
+        // Verify ownership or collaborator access
+        const wedding = await Wedding.findOne({ _id: guest.wedding, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
+        if (!wedding) {
+            return res.status(401).json({ message: 'Not authorized to update this guest' });
+        }
 
         const updatedGuest = await Guest.findByIdAndUpdate(
             req.params.id,
@@ -85,4 +92,74 @@ const updateGuest = async (req, res) => {
     }
 };
 
-module.exports = { addGuest, getGuests, updateGuest };
+// @desc    Delete a guest
+// @route   DELETE /api/guests/:id
+// @access  Private
+const deleteGuest = async (req, res) => {
+    try {
+        const guest = await Guest.findById(req.params.id);
+
+        if (!guest) {
+            return res.status(404).json({ message: 'Guest not found' });
+        }
+
+        // Verify ownership or collaborator access
+        const wedding = await Wedding.findOne({ _id: guest.wedding, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
+        if (!wedding) {
+            return res.status(401).json({ message: 'Not authorized to delete this guest' });
+        }
+
+        await guest.deleteOne();
+        res.json({ message: 'Guest removed' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get guest by token (Public)
+// @route   GET /api/guests/rsvp/:token
+// @access  Public
+const getGuestByToken = async (req, res) => {
+    try {
+        const guest = await Guest.findOne({ rsvpToken: req.params.token }).populate({
+            path: 'wedding',
+            select: 'brideName groomName date venue location brideImage groomImage'
+        });
+
+        if (!guest) {
+            return res.status(404).json({ message: 'Invalid RSVP token' });
+        }
+
+        res.json(guest);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Submit RSVP (Public)
+// @route   POST /api/guests/rsvp/:token
+// @access  Public
+const submitRSVP = async (req, res) => {
+    const { token } = req.params;
+    const { status, attendanceCount, foodPreference } = req.body;
+
+    try {
+        const guest = await Guest.findOne({ rsvpToken: token });
+
+        if (!guest) {
+            return res.status(404).json({ message: 'Invalid RSVP token' });
+        }
+
+        guest.status = status || 'Confirmed';
+        guest.attendanceCount = attendanceCount || guest.familyCount;
+        guest.foodPreference = foodPreference || 'Veg';
+
+        await guest.save();
+
+        res.json({ message: 'RSVP submitted successfully', guest });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { addGuest, getGuests, updateGuest, deleteGuest, submitRSVP, getGuestByToken };

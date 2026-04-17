@@ -71,6 +71,30 @@ export const updateGuestStatus = createAsyncThunk(
         }
     }
 );
+
+export const updateGuest = createAsyncThunk(
+    'guest/updateGuest',
+    async ({ id, data }: { id: string; data: any }, { rejectWithValue }) => {
+        try {
+            const response = await api.put(`/guests/${id}`, data);
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to update guest');
+        }
+    }
+);
+
+export const deleteGuest = createAsyncThunk(
+    'guest/deleteGuest',
+    async (id: string, { rejectWithValue }) => {
+        try {
+            await api.delete(`/guests/${id}`);
+            return id;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to delete guest');
+        }
+    }
+);
 const initialState: GuestState = {
     guests: [],
     isLoading: false,
@@ -122,6 +146,17 @@ const guestSlice = createSlice({
                 if (index !== -1) {
                     state.guests[index] = action.payload;
                 }
+            })
+            // Update Guest
+            .addCase(updateGuest.fulfilled, (state, action) => {
+                const index = state.guests.findIndex((g: Guest) => g._id === action.payload._id);
+                if (index !== -1) {
+                    state.guests[index] = action.payload;
+                }
+            })
+            // Delete Guest
+            .addCase(deleteGuest.fulfilled, (state, action) => {
+                state.guests = state.guests.filter((g: Guest) => g._id !== action.payload);
             });
     },
 });

@@ -42,6 +42,7 @@ const vendorSchema = new mongoose.Schema({
         default: Date.now,
     }
 }, {
+    timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
 });

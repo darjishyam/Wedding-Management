@@ -10,15 +10,14 @@ const getShaguns = async (req, res) => {
 
         // Validation or fallback
         if (!weddingId) {
-            // Fallback: Find first wedding for the user (legacy behavior, but try to avoid if possible)
-            const wedding = await Wedding.findOne({ user: req.user._id });
+            const wedding = await Wedding.findOne({ $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
             if (!wedding) {
                 return res.status(404).json({ message: 'Wedding not found' });
             }
             weddingId = wedding._id;
         } else {
-            // Verify this wedding belongs to the user
-            const wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+            // Verify this wedding belongs to the user or they are a collaborator
+            const wedding = await Wedding.findOne({ _id: weddingId, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
             if (!wedding) {
                 return res.status(404).json({ message: 'Wedding not found or access denied' });
             }
@@ -39,14 +38,14 @@ const addShagun = async (req, res) => {
         let weddingId = req.body.weddingId;
 
         if (!weddingId) {
-            const wedding = await Wedding.findOne({ user: req.user._id });
+            const wedding = await Wedding.findOne({ $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
             if (!wedding) {
                 return res.status(404).json({ message: 'Wedding not found' });
             }
             weddingId = wedding._id;
         } else {
-            // Verify ownership
-            const wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+            // Verify ownership or collaborator access
+            const wedding = await Wedding.findOne({ _id: weddingId, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
             if (!wedding) {
                 return res.status(404).json({ message: 'Wedding not found or access denied' });
             }
@@ -82,12 +81,18 @@ const deleteShagun = async (req, res) => {
     try {
         const shagun = await Shagun.findById(req.params.id);
 
-        if (shagun) {
-            await shagun.deleteOne();
-            res.json({ message: 'Shagun removed' });
-        } else {
-            res.status(404).json({ message: 'Shagun not found' });
+        if (!shagun) {
+            return res.status(404).json({ message: 'Shagun not found' });
         }
+
+        // Verify ownership or collaborator access
+        const wedding = await Wedding.findOne({ _id: shagun.wedding, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
+        if (!wedding) {
+            return res.status(401).json({ message: 'Not authorized to delete this shagun' });
+        }
+
+        await shagun.deleteOne();
+        res.json({ message: 'Shagun removed' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

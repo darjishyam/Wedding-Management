@@ -38,22 +38,24 @@ export default function DashboardCard({ title, icon, onPress, children, rightEle
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
         borderRadius: 24,
-        padding: 16,
+        padding: 20,
         marginBottom: 20,
+        borderWidth: 1,
+        borderColor: "rgba(212, 175, 55, 0.2)", // Subtle Gold border
         ...Platform.select({
             ios: {
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.05,
-                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.1,
+                shadowRadius: 12,
             },
             android: {
-                elevation: 2,
+                elevation: 4,
             },
             web: {
-                boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.05)",
+                boxShadow: "0px 8px 20px rgba(0, 0, 0, 0.08)",
             },
         }),
     },
@@ -66,23 +68,24 @@ const styles = StyleSheet.create({
     headerLeft: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
+        gap: 12,
     },
     iconCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: "#E6E6E6",
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "rgba(212, 175, 55, 0.1)", // Light Gold background
         justifyContent: "center",
         alignItems: "center",
     },
     cardTitle: {
-        fontSize: 16,
-        fontWeight: "700",
-        color: "#000",
+        fontSize: 18,
+        fontWeight: "800",
+        color: "#1A1A1A",
+        letterSpacing: 0.5,
     },
     content: {
         flexDirection: "row",
-        gap: 12,
+        gap: 14,
     },
 });

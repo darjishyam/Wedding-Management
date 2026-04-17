@@ -10,9 +10,9 @@ const addExpense = async (req, res) => {
     try {
         let wedding;
         if (weddingId) {
-            wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+            wedding = await Wedding.findOne({ _id: weddingId, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
         } else {
-            wedding = await Wedding.findOne({ user: req.user._id });
+            wedding = await Wedding.findOne({ $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
         }
 
         if (!wedding) {
@@ -42,11 +42,11 @@ const getExpenses = async (req, res) => {
         let weddingId = req.query.weddingId;
 
         if (!weddingId) {
-            const wedding = await Wedding.findOne({ user: req.user._id });
+            const wedding = await Wedding.findOne({ $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
             if (!wedding) return res.json([]);
             weddingId = wedding._id;
         } else {
-            const wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+            const wedding = await Wedding.findOne({ _id: weddingId, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
             if (!wedding) return res.status(404).json({ message: 'Wedding not found' });
         }
 
@@ -57,4 +57,57 @@ const getExpenses = async (req, res) => {
     }
 };
 
-module.exports = { addExpense, getExpenses };
+// @desc    Update an expense
+// @route   PUT /api/expenses/:id
+// @access  Private
+const updateExpense = async (req, res) => {
+    try {
+        const expense = await Expense.findById(req.params.id);
+
+        if (!expense) {
+            return res.status(404).json({ message: 'Expense not found' });
+        }
+
+        // Verify ownership or collaborator access
+        const wedding = await Wedding.findOne({ _id: expense.wedding, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
+        if (!wedding) {
+            return res.status(401).json({ message: 'Not authorized to update this expense' });
+        }
+
+        const updatedExpense = await Expense.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        );
+
+        res.json(updatedExpense);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Delete an expense
+// @route   DELETE /api/expenses/:id
+// @access  Private
+const deleteExpense = async (req, res) => {
+    try {
+        const expense = await Expense.findById(req.params.id);
+
+        if (!expense) {
+            return res.status(404).json({ message: 'Expense not found' });
+        }
+
+        // Verify ownership or collaborator access
+        const wedding = await Wedding.findOne({ _id: expense.wedding, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
+        if (!wedding) {
+            return res.status(401).json({ message: 'Not authorized to delete this expense' });
+        }
+
+        await expense.deleteOne();
+        res.json({ message: 'Expense removed' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { addExpense, getExpenses, updateExpense, deleteExpense };

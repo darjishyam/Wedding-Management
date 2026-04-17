@@ -31,10 +31,8 @@ const packageSchema = new mongoose.Schema({
         venue: { type: Number, default: 0 },
         shagun: { type: Number, default: 0 },
     },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    }
+}, {
+    timestamps: true
 });
 
 module.exports = mongoose.model('Package', packageSchema);

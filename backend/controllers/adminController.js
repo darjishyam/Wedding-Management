@@ -3,6 +3,12 @@ const Wedding = require('../models/Wedding');
 const Vendor = require('../models/Vendor');
 const Package = require('../models/Package');
 const Payment = require('../models/Payment');
+const Guest = require('../models/Guest');
+const Expense = require('../models/Expense');
+const Shagun = require('../models/Shagun');
+const Event = require('../models/Event');
+const Task = require('../models/Task');
+const ChatHistory = require('../models/ChatHistory');
 
 // @desc    Get System-wide Statistics
 // @route   GET /api/admin/stats
@@ -54,10 +60,31 @@ const deleteUserByAdmin = async (req, res) => {
     try {
         const userId = req.params.id;
 
+        // Find all weddings owned by this user
+        const weddings = await Wedding.find({ user: userId });
+        const weddingIds = weddings.map(w => w._id);
+
+        // Cascade delete all related data
+        await Guest.deleteMany({ wedding: { $in: weddingIds } });
+        await Expense.deleteMany({ wedding: { $in: weddingIds } });
+        await Shagun.deleteMany({ wedding: { $in: weddingIds } });
+        await Vendor.deleteMany({ wedding: { $in: weddingIds } });
+        await Event.deleteMany({ wedding: { $in: weddingIds } });
+        await Task.deleteMany({ wedding: { $in: weddingIds } });
+        await ChatHistory.deleteMany({ wedding: { $in: weddingIds } });
+        await Payment.deleteMany({ user: userId });
+
         await Wedding.deleteMany({ user: userId });
+
+        // Remove from collaborator lists
+        await Wedding.updateMany(
+            { collaborators: userId },
+            { $pull: { collaborators: userId } }
+        );
+
         await User.findByIdAndDelete(userId);
 
-        res.json({ message: 'User deleted by Admin' });
+        res.json({ message: 'User and all associated data deleted by Admin' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -83,11 +110,18 @@ const getAllWeddings = async (req, res) => {
 const deleteWeddingByAdmin = async (req, res) => {
     try {
         const weddingId = req.params.id;
-        // Delete related data first (optional but good practice)
-        // For minimal redundancy, we just delete the wedding doc, assuming cascade is handled or acceptable.
-        // But let's keep it simple: just delete the wedding.
+
+        // Cascade delete all related data
+        await Guest.deleteMany({ wedding: weddingId });
+        await Expense.deleteMany({ wedding: weddingId });
+        await Shagun.deleteMany({ wedding: weddingId });
+        await Vendor.deleteMany({ wedding: weddingId });
+        await Event.deleteMany({ wedding: weddingId });
+        await Task.deleteMany({ wedding: weddingId });
+        await ChatHistory.deleteMany({ wedding: weddingId });
+
         await Wedding.findByIdAndDelete(weddingId);
-        res.json({ message: 'Wedding deleted by Admin' });
+        res.json({ message: 'Wedding and all associated data deleted by Admin' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

@@ -125,6 +125,12 @@ export default function AIChatScreen() {
                     <Ionicons name="sparkles" size={20} color="#FFeb3B" style={{ marginRight: 8 }} />
                     <Text style={styles.headerTitle}>Wedding AI Assistant</Text>
                 </View>
+                <TouchableOpacity 
+                    onPress={() => router.push('/ai-budget-planner')} 
+                    style={styles.plannerButton}
+                >
+                    <Ionicons name="calculator-outline" size={20} color="#FFF" />
+                </TouchableOpacity>
             </View>
 
             <KeyboardAvoidingView
@@ -207,6 +213,12 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         color: '#FFF',
+    },
+    plannerButton: {
+        marginLeft: 'auto',
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        padding: 8,
+        borderRadius: 12,
     },
     chatContainer: {
         flex: 1,

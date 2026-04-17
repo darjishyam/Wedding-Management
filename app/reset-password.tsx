@@ -48,9 +48,13 @@ export default function ResetPasswordScreen() {
         try {
             await authService.resetPassword(email, otp, newPassword);
 
-            Alert.alert("Success", "Password reset successfully! Please login with your new password.", [
-                { text: "Login", onPress: () => router.replace("/login") }
-            ]);
+            showToast("Password reset successful!", "success");
+            
+            // Short delay to let the toast be seen before navigating
+            setTimeout(() => {
+                router.replace("/login");
+            }, 1500);
+            
         } catch (error: any) {
             const msg = error.message || "Failed to reset password";
             showToast(msg, "error");

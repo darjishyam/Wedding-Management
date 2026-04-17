@@ -4,6 +4,7 @@ const Expense = require('../models/Expense');
 const Package = require('../models/Package');
 const Vendor = require('../models/Vendor');
 const Shagun = require('../models/Shagun');
+const User = require('../models/User');
 
 // @desc    Create a new wedding
 // @route   POST /api/weddings
@@ -94,7 +95,13 @@ const createWedding = async (req, res) => {
 // @access  Private
 const getAllWeddings = async (req, res) => {
     try {
-        const weddings = await Wedding.find({ user: req.user._id }).sort({ date: -1 });
+        const query = {
+            $or: [
+                { user: req.user._id },
+                { collaborators: req.user._id }
+            ]
+        };
+        const weddings = await Wedding.find(query).sort({ date: -1 });
         res.json(weddings);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -108,13 +115,17 @@ const getMyWedding = async (req, res) => {
     try {
         let wedding;
         const { weddingId } = req.query;
+        const query = {
+            $or: [
+                { user: req.user._id },
+                { collaborators: req.user._id }
+            ]
+        };
 
         if (weddingId) {
-            wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+            wedding = await Wedding.findOne({ _id: weddingId, ...query }).populate('collaborators', 'name email profileImage');
         } else {
-            // Default to the most recently created/updated or just one
-            // We'll sort by createdAt desc to get the latest
-            wedding = await Wedding.findOne({ user: req.user._id }).sort({ createdAt: -1 });
+            wedding = await Wedding.findOne(query).sort({ createdAt: -1 }).populate('collaborators', 'name email profileImage');
         }
 
         if (wedding) {
@@ -168,7 +179,13 @@ const getMyWedding = async (req, res) => {
 const updateWedding = async (req, res) => {
     try {
         const { groomName, brideName, date, totalBudget } = req.body;
-        const wedding = await Wedding.findOne({ _id: req.params.id, user: req.user._id });
+        const query = {
+            $or: [
+                { user: req.user._id },
+                { collaborators: req.user._id }
+            ]
+        };
+        const wedding = await Wedding.findOne({ _id: req.params.id, ...query });
 
         if (wedding) {
             wedding.groomName = groomName || wedding.groomName;
@@ -205,4 +222,55 @@ const updateWedding = async (req, res) => {
     }
 };
 
-module.exports = { createWedding, getMyWedding, getAllWeddings, updateWedding };
+const addCollaborator = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const wedding = await Wedding.findOne({ _id: req.params.id, user: req.user._id });
+
+        if (!wedding) {
+            return res.status(404).json({ message: 'Wedding not found or you are not the primary owner' });
+        }
+
+        const userToAdd = await User.findOne({ email: email.toLowerCase() });
+        if (!userToAdd) {
+            return res.status(404).json({ message: 'User with this email not found. Please ask them to register first.' });
+        }
+
+        if (userToAdd._id.toString() === req.user._id.toString()) {
+            return res.status(400).json({ message: 'You are already the owner of this wedding' });
+        }
+
+        if (wedding.collaborators.includes(userToAdd._id)) {
+            return res.status(400).json({ message: 'User is already a collaborator' });
+        }
+
+        wedding.collaborators.push(userToAdd._id);
+        await wedding.save();
+
+        const updatedWedding = await Wedding.findById(wedding._id).populate('collaborators', 'name email profileImage');
+        res.json(updatedWedding);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const removeCollaborator = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const wedding = await Wedding.findOne({ _id: req.params.id, user: req.user._id });
+
+        if (!wedding) {
+            return res.status(404).json({ message: 'Wedding not found or you are not the primary owner' });
+        }
+
+        wedding.collaborators = wedding.collaborators.filter(c => c.toString() !== userId);
+        await wedding.save();
+
+        const updatedWedding = await Wedding.findById(wedding._id).populate('collaborators', 'name email profileImage');
+        res.json(updatedWedding);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { createWedding, getMyWedding, getAllWeddings, updateWedding, addCollaborator, removeCollaborator };

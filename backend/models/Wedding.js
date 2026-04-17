@@ -73,11 +73,17 @@ const weddingSchema = new mongoose.Schema({
     weddingSide: {
         type: String, // Bride/Groom
     },
+    collaborators: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     status: {
         type: String,
         enum: ['Planned', 'Ongoing', 'Completed', 'Archived'],
         default: 'Planned'
     }
+}, {
+    timestamps: true
 });
 
 module.exports = mongoose.model('Wedding', weddingSchema);

@@ -23,15 +23,18 @@ const eventSchema = new mongoose.Schema({
     description: {
         type: String,
     },
+    itinerary: [{
+        time: String,
+        activity: String,
+        personInCharge: String,
+    }],
     status: {
         type: String,
         enum: ['Upcoming', 'Completed', 'Cancelled'],
         default: 'Upcoming',
     },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    }
+}, {
+    timestamps: true
 });
 
 module.exports = mongoose.model('Event', eventSchema);

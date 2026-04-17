@@ -10,4 +10,8 @@ router.post('/chat', protect, require('../controllers/aiController').chatWithAI)
 router.get('/history/:weddingId', protect, require('../controllers/aiController').getChatHistory);
 router.post('/ask', protect, require('../controllers/aiController').askAI);
 
+// Budget Planner Routes
+router.post('/suggest-budget', protect, require('../controllers/aiController').generateBudgetBreakdown);
+router.post('/apply-budget', protect, require('../controllers/aiController').applyBudgetBreakdown);
+
 module.exports = router;

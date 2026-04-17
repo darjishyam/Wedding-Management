@@ -15,7 +15,8 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
+    TextInput
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -43,6 +44,40 @@ export default function EventsScreen() {
             fetchGuests(); // Ensure guests are loaded
         }, [weddingData])
     );
+
+    // Itinerary Modal State
+    const [itineraryModalVisible, setItineraryModalVisible] = useState(false);
+    const [selectedEvent, setSelectedEvent] = useState<any>(null);
+    const [itineraryForm, setItineraryForm] = useState({ time: '', activity: '', personInCharge: '' });
+    const [isUpdatingItinerary, setIsUpdatingItinerary] = useState(false);
+
+    const openItinerary = (event: any) => {
+        setSelectedEvent(event);
+        setItineraryModalVisible(true);
+    };
+
+    const handleAddItineraryItem = async () => {
+        if (!itineraryForm.time || !itineraryForm.activity) {
+            Alert.alert("Error", "Please fill time and activity");
+            return;
+        }
+
+        const updatedItinerary = [...(selectedEvent.itinerary || []), itineraryForm];
+        setIsUpdatingItinerary(true);
+
+        try {
+            const res = await api.put(`/events/${selectedEvent._id}`, {
+                itinerary: updatedItinerary
+            });
+            setSelectedEvent(res.data);
+            setEvents(events.map((e: any) => e._id === selectedEvent._id ? res.data : e));
+            setItineraryForm({ time: '', activity: '', personInCharge: '' });
+        } catch (error) {
+            Alert.alert("Error", "Failed to update itinerary");
+        } finally {
+            setIsUpdatingItinerary(false);
+        }
+    };
 
     const fetchEvents = async () => {
         if (!weddingData?._id) return;
@@ -198,10 +233,16 @@ export default function EventsScreen() {
 
                 <View style={{ flexDirection: 'column', gap: 8 }}>
                     <TouchableOpacity
-                        onPress={() => handleExportPDF(item)}
-                        style={[styles.actionButton, { backgroundColor: '#E3F2FD' }]}
+                        onPress={() => openItinerary(item)}
+                        style={[styles.actionButton, { backgroundColor: '#FFF9E3' }]}
                     >
-                        <Ionicons name="document-text-outline" size={20} color="#1976D2" />
+                        <Ionicons name="list-outline" size={20} color="#D4AF37" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => handleExportPDF(item)}
+                        style={[styles.actionButton, { backgroundColor: 'rgba(138, 0, 48, 0.05)' }]}
+                    >
+                        <Ionicons name="document-text-outline" size={20} color="#8A0030" />
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => handleDelete(item._id, item.name)}
@@ -218,9 +259,9 @@ export default function EventsScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#000" />
+                    <Ionicons name="arrow-back" size={24} color="#8A0030" />
                 </TouchableOpacity>
-                <Text style={styles.title}>Wedding Events</Text>
+                <Text style={styles.title}>{t("events") || "Wedding Events"}</Text>
             </View>
 
 
@@ -321,6 +362,75 @@ export default function EventsScreen() {
                     )}
                 </View>
             </Modal>
+
+            {/* Itinerary Management Modal */}
+            <Modal
+                visible={itineraryModalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setItineraryModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.itineraryContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Ceremony Itinerary</Text>
+                            <TouchableOpacity onPress={() => setItineraryModalVisible(false)}>
+                                <Ionicons name="close" size={24} color="#000" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {selectedEvent && (
+                            <ScrollView style={{ flex: 1 }}>
+                                <Text style={styles.eventLabel}>{selectedEvent.name} • Granular Schedule</Text>
+                                
+                                {selectedEvent.itinerary && selectedEvent.itinerary.length > 0 ? (
+                                    selectedEvent.itinerary.map((it: any, i: number) => (
+                                        <View key={i} style={styles.itineraryItem}>
+                                            <View style={styles.timeLine}>
+                                                <Text style={styles.itTime}>{it.time}</Text>
+                                                <View style={styles.line} />
+                                            </View>
+                                            <View style={styles.itDetails}>
+                                                <Text style={styles.itActivity}>{it.activity}</Text>
+                                                <Text style={styles.itPerson}><Ionicons name="person" size={10} /> {it.personInCharge || 'Unassigned'}</Text>
+                                            </View>
+                                        </View>
+                                    ))
+                                ) : (
+                                    <View style={styles.emptyItinerary}>
+                                        <Text style={{ color: '#999' }}>No activities mapped for this event.</Text>
+                                    </View>
+                                )}
+
+                                <View style={styles.itineraryForm}>
+                                    <Text style={styles.formTitle}>Add Activity</Text>
+                                    <TextInput 
+                                        style={styles.itInput} 
+                                        placeholder="Time (e.g. 10:00 AM)" 
+                                        value={itineraryForm.time}
+                                        onChangeText={(t) => setItineraryForm({ ...itineraryForm, time: t })}
+                                    />
+                                    <TextInput 
+                                        style={styles.itInput} 
+                                        placeholder="Activity Details" 
+                                        value={itineraryForm.activity}
+                                        onChangeText={(t) => setItineraryForm({ ...itineraryForm, activity: t })}
+                                    />
+                                    <TextInput 
+                                        style={styles.itInput} 
+                                        placeholder="Person in Charge" 
+                                        value={itineraryForm.personInCharge}
+                                        onChangeText={(t) => setItineraryForm({ ...itineraryForm, personInCharge: t })}
+                                    />
+                                    <TouchableOpacity style={styles.itAddBtn} onPress={handleAddItineraryItem} disabled={isUpdatingItinerary}>
+                                        {isUpdatingItinerary ? <ActivityIndicator color="#FFF" /> : <Text style={styles.itAddText}>Add to Timeline</Text>}
+                                    </TouchableOpacity>
+                                </View>
+                            </ScrollView>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView >
     );
 }
@@ -412,8 +522,98 @@ const styles = StyleSheet.create({
     suggestionDesc: { color: '#666', marginBottom: 8 },
     suggestionTime: { fontSize: 12, color: '#999' },
     modalFooter: { padding: 20, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#EEE' },
-    saveButton: { backgroundColor: '#E40046', padding: 16, borderRadius: 12, alignItems: 'center' },
-    saveButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' }
+    saveButton: { backgroundColor: '#8A0030', padding: 16, borderRadius: 12, alignItems: 'center' },
+    saveButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+    
+    // New Itinerary Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    itineraryContent: {
+        backgroundColor: '#FFF',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        maxHeight: '90%',
+    },
+    eventLabel: {
+        fontSize: 14,
+        color: '#D4AF37',
+        fontWeight: '700',
+        marginBottom: 20,
+    },
+    itineraryItem: {
+        flexDirection: 'row',
+        marginBottom: 15,
+    },
+    timeLine: {
+        alignItems: 'center',
+        width: 70,
+    },
+    itTime: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#333',
+    },
+    line: {
+        width: 1,
+        flex: 1,
+        backgroundColor: '#D4AF37',
+        marginVertical: 4,
+    },
+    itDetails: {
+        flex: 1,
+        paddingLeft: 15,
+        paddingBottom: 15,
+    },
+    itActivity: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#000',
+    },
+    itPerson: {
+        fontSize: 12,
+        color: '#666',
+        marginTop: 4,
+    },
+    emptyItinerary: {
+        padding: 40,
+        alignItems: 'center',
+    },
+    itineraryForm: {
+        marginTop: 20,
+        backgroundColor: '#F9F9F9',
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#EEE',
+    },
+    formTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        marginBottom: 12,
+    },
+    itInput: {
+        backgroundColor: '#FFF',
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: '#DDD'
+    },
+    itAddBtn: {
+        backgroundColor: '#8A0030',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    itAddText: {
+        color: '#FFF',
+        fontWeight: '700'
+    }
 });
 
 

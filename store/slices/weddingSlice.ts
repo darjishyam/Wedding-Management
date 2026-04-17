@@ -11,6 +11,7 @@ export interface Wedding {
         guestCount: number;
         totalSpent: number;
     };
+    collaborators?: any[];
     groomImage?: string;
     brideImage?: string;
     location?: string;
@@ -109,6 +110,24 @@ export const createWedding = createAsyncThunk('wedding/create', async (data: Par
     }
 });
 
+export const addCollaborator = createAsyncThunk('wedding/addCollaborator', async ({ id, email }: { id: string, email: string }, { rejectWithValue }) => {
+    try {
+        const response = await api.post(`/weddings/${id}/collaborators`, { email });
+        return response.data;
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to add collaborator');
+    }
+});
+
+export const removeCollaborator = createAsyncThunk('wedding/removeCollaborator', async ({ id, userId }: { id: string, userId: string }, { rejectWithValue }) => {
+    try {
+        const response = await api.delete(`/weddings/${id}/collaborators/${userId}`);
+        return response.data;
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to remove collaborator');
+    }
+});
+
 const weddingSlice = createSlice({
     name: 'wedding',
     initialState,
@@ -177,6 +196,13 @@ const weddingSlice = createSlice({
             .addCase(createWedding.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
+            })
+            // Collaborators
+            .addCase(addCollaborator.fulfilled, (state, action) => {
+                state.weddingData = action.payload;
+            })
+            .addCase(removeCollaborator.fulfilled, (state, action) => {
+                state.weddingData = action.payload;
             });
     },
 });

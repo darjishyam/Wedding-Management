@@ -6,15 +6,23 @@ import { PDFService } from "@/services/PDFService";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ExpenseListScreen() {
     const router = useRouter();
     const { user } = useAuth();
-    const { expenses, isLoading } = useExpense();
+    const { expenses, isLoading, updateExpense, deleteExpense } = useExpense();
     const { weddingData } = useWedding();
     const { t } = useLanguage();
+
+    // Edit State
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [editingExpense, setEditingExpense] = useState<any>(null);
+    const [editTitle, setEditTitle] = useState("");
+    const [editAmount, setEditAmount] = useState("");
+    const [editCategory, setEditCategory] = useState("");
+    const [isUpdating, setIsUpdating] = useState(false);
 
     // Packages Logic
     const [packages, setPackages] = useState<any[]>([]);
@@ -111,6 +119,57 @@ export default function ExpenseListScreen() {
         return new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
     }
 
+    const handleEditPress = (expense: any) => {
+        setEditingExpense(expense);
+        setEditTitle(expense.title);
+        setEditAmount(expense.amount.toString());
+        setEditCategory(expense.category);
+        setEditModalVisible(true);
+    };
+
+    const handleUpdateExpense = async () => {
+        if (!editTitle || !editAmount || !editCategory) {
+            Alert.alert("Error", "Please fill all fields");
+            return;
+        }
+
+        setIsUpdating(true);
+        try {
+            await updateExpense(editingExpense._id, {
+                title: editTitle,
+                amount: parseFloat(editAmount),
+                category: editCategory
+            });
+            setEditModalVisible(false);
+            Alert.alert("Success", "Expense updated");
+        } catch (error: any) {
+            Alert.alert("Error", "Failed to update expense");
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleDeleteExpense = (id: string) => {
+        Alert.alert(
+            "Delete Expense",
+            "Are you sure you want to remove this expense?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await deleteExpense(id);
+                        } catch (error: any) {
+                            Alert.alert("Error", "Failed to delete expense");
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.navBar}>
@@ -171,6 +230,15 @@ export default function ExpenseListScreen() {
                                 <View style={styles.expenseInfo}>
                                     <Text style={styles.expenseTitle}>{expense.title}</Text>
                                     <Text style={styles.expenseCategory}>{expense.category} • {formatDate(expense.date)}</Text>
+                                    
+                                    <View style={{ flexDirection: 'row', gap: 16, marginTop: 8 }}>
+                                        <TouchableOpacity onPress={() => handleEditPress(expense)}>
+                                            <Ionicons name="create-outline" size={16} color="#007AFF" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={() => handleDeleteExpense(expense._id)}>
+                                            <Ionicons name="trash-outline" size={16} color="#FF3B30" />
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
                                 <Text style={styles.expenseAmount}>₹ {expense.amount.toLocaleString()}</Text>
                             </View>
@@ -179,6 +247,73 @@ export default function ExpenseListScreen() {
                 </View>
 
             </ScrollView>
+
+            {/* Edit Expense Modal */}
+            <Modal
+                visible={editModalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setEditModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Edit Expense</Text>
+                            <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                                <Ionicons name="close" size={24} color="#000" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.inputLabel}>Title</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={editTitle}
+                            onChangeText={setEditTitle}
+                            placeholder="Expense Title"
+                        />
+
+                        <Text style={styles.inputLabel}>Amount (₹)</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={editAmount}
+                            onChangeText={setEditAmount}
+                            placeholder="Amount"
+                            keyboardType="numeric"
+                        />
+
+                        <Text style={styles.inputLabel}>Category</Text>
+                        <View style={styles.categoryContainer}>
+                            {['Food', 'Venue', 'Decoration', 'Clothing', 'Photography', 'Other'].map((cat) => (
+                                <TouchableOpacity
+                                    key={cat}
+                                    style={[
+                                        styles.categoryChip,
+                                        editCategory === cat && styles.categoryChipSelected
+                                    ]}
+                                    onPress={() => setEditCategory(cat)}
+                                >
+                                    <Text style={[
+                                        styles.categoryChipText,
+                                        editCategory === cat && styles.categoryChipTextSelected
+                                    ]}>{cat}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.saveButton}
+                            onPress={handleUpdateExpense}
+                            disabled={isUpdating}
+                        >
+                            {isUpdating ? (
+                                <ActivityIndicator color="#FFF" />
+                            ) : (
+                                <Text style={styles.saveButtonText}>Save Changes</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             <TouchableOpacity style={styles.fab} onPress={handleAddExpense}>
                 <Ionicons name="add" size={30} color="#FFF" />
@@ -282,5 +417,77 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#FFF',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        maxHeight: '80%',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+    },
+    inputLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 8,
+        marginTop: 16,
+    },
+    input: {
+        backgroundColor: '#F5F5F5',
+        borderRadius: 12,
+        padding: 12,
+        fontSize: 16,
+    },
+    categoryContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 8,
+    },
+    categoryChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#DDD',
+    },
+    categoryChipSelected: {
+        backgroundColor: '#000',
+        borderColor: '#000',
+    },
+    categoryChipText: {
+        fontSize: 12,
+        color: '#666',
+    },
+    categoryChipTextSelected: {
+        color: '#FFF',
+    },
+    saveButton: {
+        backgroundColor: '#000',
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
+        marginTop: 32,
+        marginBottom: 16,
+    },
+    saveButtonText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '700',
     }
 });

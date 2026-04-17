@@ -8,7 +8,8 @@ const debuggerHost = Constants.expoConfig?.hostUri;
 const localhost = debuggerHost?.split(":")[0];
 
 // Define BASE_URL
-const BASE_URL = 'https://wedding-management-dqr8.onrender.com/api';
+const BASE_URL = 'http://localhost:5000/api';
+// const BASE_URL = 'https://wedding-management-dqr8.onrender.com/api';
 // const BASE_URL = Platform.OS === 'web'
 //     ? `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:5000/api`
 //     : `http://10.31.255.131:5000/api`;

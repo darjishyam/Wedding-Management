@@ -3,7 +3,9 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
     addGuest as addGuestAction,
     fetchGuests as fetchGuestsAction,
-    updateGuestStatus as updateGuestStatusAction
+    updateGuestStatus as updateGuestStatusAction,
+    updateGuest as updateGuestAction,
+    deleteGuest as deleteGuestAction
 } from '../store/slices/guestSlice';
 
 export function useGuest() {
@@ -41,12 +43,22 @@ export function useGuest() {
         await dispatch(updateGuestStatusAction({ id, isInvited, status }));
     };
 
+    const updateGuest = async (id: string, data: any) => {
+        await dispatch(updateGuestAction({ id, data })).unwrap();
+    };
+
+    const deleteGuest = async (id: string) => {
+        await dispatch(deleteGuestAction(id)).unwrap();
+    };
+
     return {
         guests,
         isLoading,
         addGuest,
         fetchGuests,
-        updateGuestStatus
+        updateGuestStatus,
+        updateGuest,
+        deleteGuest
     };
 }
 

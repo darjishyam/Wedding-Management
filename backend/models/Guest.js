@@ -48,10 +48,30 @@ const guestSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
-    createdAt: {
-        type: Date,
-        default: Date.now,
+    // RSVP & Logistics
+    rsvpToken: {
+        type: String,
+        unique: true,
+        sparse: true, // Only if RSVP link is generated
+        index: true,
     },
+    attendanceCount: {
+        type: Number,
+        default: 0,
+    },
+    foodPreference: {
+        type: String,
+        enum: ['Veg', 'Non-Veg', 'Jain', 'Other'],
+        default: 'Veg',
+    },
+    accommodation: {
+        hotelName: String,
+        roomNumber: String,
+        checkIn: Date,
+        checkOut: Date,
+    },
+}, {
+    timestamps: true
 });
 
 module.exports = mongoose.model('Guest', guestSchema);

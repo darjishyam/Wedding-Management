@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Image as RNImage, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as WebBrowser from 'expo-web-browser';
 
 export default function PurchasePremiumScreen() {
   const router = useRouter();
@@ -44,25 +45,32 @@ export default function PurchasePremiumScreen() {
     console.log("Current User State:", user ? JSON.stringify(user) : "No User");
     console.log("Is Premium:", user?.isPremium);
 
-    // PayPal Logic
+    // Razorpay Logic
     setIsProcessing(true);
     try {
       const api = require('@/services/api').default;
-      const response = await api.post('/payment/paypal/create');
+      
+      // 1. Create Order on Backend
+      const orderRes = await api.post('/payment/order', {
+        amount: 120, // ₹120 (from the UI)
+        currency: "INR"
+      });
 
-      if (response.data && response.data.approvalUrl) {
-        // Open PayPal in default browser
-        const Linking = require('react-native').Linking;
-        await Linking.openURL(response.data.approvalUrl);
+      const orderData = orderRes.data;
+      if (orderData && orderData.id) {
+        // 2. Open Hosted Checkout
+        // Construct the URL with pre-fill data and userId for fallback redirect
+        const checkoutUrl = `${api.defaults.baseURL}/payment/razorpay-checkout?orderId=${orderData.id}&amount=${orderData.amount}&name=${encodeURIComponent(user?.name || '')}&email=${encodeURIComponent(user?.email || '')}&userId=${user?._id}`;
+        
+        console.log("[Razorpay] Opening Checkout URL:", checkoutUrl);
+        await WebBrowser.openBrowserAsync(checkoutUrl);
 
-        // In a real app, we would listen for deep links.
-        // For this demo/Simple Sandbox, we can just show an alert telling user what to do.
+        // 3. After browser closes, check status
         Alert.alert(
-          "PayPal Opened",
-          "Please complete the payment in the browser. Once done, return here and your premium will be active.",
+          "Payment Finished?",
+          "If you completed the payment, your premium status will update automatically.",
           [{
-            text: "I've Paid", onPress: async () => {
-              // Reload user to check if premium is active
+            text: "Check Status", onPress: async () => {
               try {
                 await reloadUser();
                 Alert.alert("Success", "Premium Activated!");
@@ -74,10 +82,10 @@ export default function PurchasePremiumScreen() {
           }]
         );
       } else {
-        Alert.alert("Error", "Could not generate PayPal link.");
+        Alert.alert("Error", "Could not generate Payment Order.");
       }
     } catch (error) {
-      console.error(error);
+      console.error("Razorpay Initiation Error:", error);
       Alert.alert("Error", "Payment initiation failed.");
     } finally {
       setIsProcessing(false);

@@ -19,7 +19,9 @@ import InvitationCard from "../../components/InvitationCard";
 import api from "../../services/api";
 
 const THEMES = [
+    { id: "premium_gujarati", name: "Premium Gujarati" },
     { id: "gujarati", name: "Gujarati Kankotri" },
+    { id: "classic_kankotri", name: "Classic Kankotri" },
     { id: "traditional", name: "Royal Traditional" },
     { id: "modern", name: "Modern Floral" },
     { id: "minimal", name: "Sleek Minimal" },
@@ -28,7 +30,7 @@ const THEMES = [
 export default function InvitationsScreen() {
     const router = useRouter();
     const viewShotRef = useRef(null);
-    const [selectedTheme, setSelectedTheme] = useState<"gujarati" | "traditional" | "modern" | "minimal">("gujarati");
+    const [selectedTheme, setSelectedTheme] = useState<"premium_gujarati" | "gujarati" | "traditional" | "modern" | "minimal" | "classic_kankotri">("premium_gujarati");
     const [loading, setLoading] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
     const [customMessage, setCustomMessage] = useState(

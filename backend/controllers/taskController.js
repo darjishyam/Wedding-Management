@@ -26,12 +26,12 @@ exports.getTasks = async (req, res) => {
         let weddingId = req.query.weddingId;
 
         if (!weddingId) {
-            const wedding = await Wedding.findOne({ user: req.user._id });
+            const wedding = await Wedding.findOne({ $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
             if (!wedding) return res.status(404).json({ message: "Wedding not found. Please create a wedding first." });
             weddingId = wedding._id;
         } else {
-            // Verify ownership
-            const wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+            // Verify ownership or collaborator access
+            const wedding = await Wedding.findOne({ _id: weddingId, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
             if (!wedding) return res.status(404).json({ message: "Wedding not found or access denied" });
         }
 
@@ -56,9 +56,9 @@ exports.addTask = async (req, res) => {
 
         let wedding;
         if (weddingId) {
-            wedding = await Wedding.findOne({ _id: weddingId, user: req.user._id });
+            wedding = await Wedding.findOne({ _id: weddingId, $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
         } else {
-            wedding = await Wedding.findOne({ user: req.user._id });
+            wedding = await Wedding.findOne({ $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
         }
 
         if (!wedding) return res.status(404).json({ message: "Wedding not found" });
@@ -84,7 +84,7 @@ exports.updateTask = async (req, res) => {
         const { taskId } = req.params;
         const updates = req.body;
 
-        const wedding = await Wedding.findOne({ user: req.user._id });
+        const wedding = await Wedding.findOne({ $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
         if (!wedding) return res.status(404).json({ message: "Wedding not found" });
 
         const task = await Task.findOneAndUpdate(
@@ -105,7 +105,7 @@ exports.deleteTask = async (req, res) => {
     try {
         const { taskId } = req.params;
 
-        const wedding = await Wedding.findOne({ user: req.user._id });
+        const wedding = await Wedding.findOne({ $or: [{ user: req.user._id }, { collaborators: req.user._id }] });
         if (!wedding) return res.status(404).json({ message: "Wedding not found" });
 
         const task = await Task.findOneAndDelete({ _id: taskId, wedding: wedding._id });
