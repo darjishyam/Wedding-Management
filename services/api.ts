@@ -30,8 +30,8 @@ const getBaseUrl = () => {
   return finalUrl;
 };
 
-const BASE_URL = getBaseUrl();
-// const BASE_URL = 'https://wedding-management-dqr8.onrender.com/api';
+// const BASE_URL = getBaseUrl();
+const BASE_URL = 'https://wedding-management-dqr8.onrender.com/api';
 
 const api = axios.create({
     baseURL: BASE_URL,
