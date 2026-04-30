@@ -16,7 +16,8 @@ import {
     Text,
     TouchableOpacity,
     View,
-    TextInput
+    TextInput,
+    KeyboardAvoidingView
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -28,7 +29,7 @@ export default function EventsScreen() {
     const { weddingData } = useWedding();
     const { guests, fetchGuests } = useGuest(); // Use Guest Context
     const { t } = useLanguage();
-    const [events, setEvents] = useState([]);
+    const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -115,6 +116,28 @@ export default function EventsScreen() {
 
         const html = PDFService.generateEventPDFHTML(event, eventGuests);
         await PDFService.generateAndSharePDF(html, `${event.name}_List`);
+    };
+
+    const handleExportAllEvents = async () => {
+        if (events.length === 0) {
+            Alert.alert("Info", "No events to export.");
+            return;
+        }
+
+        Alert.alert(
+            "Export Schedule",
+            `Exporting ${events.length} events as PDF. Continue?`,
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Export",
+                    onPress: async () => {
+                        const html = PDFService.generateAllEventsPDFHTML(events, guests || []);
+                        await PDFService.generateAndSharePDF(html, 'All_Events_Schedule');
+                    }
+                }
+            ]
+        );
     };
 
     const onRefresh = () => {
@@ -262,6 +285,9 @@ export default function EventsScreen() {
                     <Ionicons name="arrow-back" size={24} color="#8A0030" />
                 </TouchableOpacity>
                 <Text style={styles.title}>{t("events") || "Wedding Events"}</Text>
+                <TouchableOpacity onPress={handleExportAllEvents} style={{ padding: 8 }}>
+                    <Ionicons name="share-outline" size={22} color="#8A0030" />
+                </TouchableOpacity>
             </View>
 
 
@@ -306,6 +332,7 @@ export default function EventsScreen() {
                 visible={aiModalVisible}
                 animationType="slide"
                 presentationStyle="pageSheet"
+                statusBarTranslucent={true}
                 onRequestClose={() => setAiModalVisible(false)}
             >
                 <View style={styles.modalContainer}>
@@ -368,20 +395,30 @@ export default function EventsScreen() {
                 visible={itineraryModalVisible}
                 animationType="slide"
                 transparent={true}
+                statusBarTranslucent={true}
                 onRequestClose={() => setItineraryModalVisible(false)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.itineraryContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Ceremony Itinerary</Text>
-                            <TouchableOpacity onPress={() => setItineraryModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#000" />
-                            </TouchableOpacity>
-                        </View>
+                <KeyboardAvoidingView 
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={{ flex: 1 }}
+                >
+                    <View style={[styles.modalOverlay, Platform.OS === 'android' && { paddingBottom: 0 }]}>
+                        <View style={styles.itineraryContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Ceremony Itinerary</Text>
+                                <TouchableOpacity onPress={() => setItineraryModalVisible(false)}>
+                                    <Ionicons name="close" size={24} color="#000" />
+                                </TouchableOpacity>
+                            </View>
 
-                        {selectedEvent && (
-                            <ScrollView style={{ flex: 1 }}>
-                                <Text style={styles.eventLabel}>{selectedEvent.name} • Granular Schedule</Text>
+                            {selectedEvent && (
+                                <ScrollView 
+                                    style={{ flex: 1 }} 
+                                    contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 24 : 100 }}
+                                    keyboardShouldPersistTaps="handled"
+                                    showsVerticalScrollIndicator={false}
+                                >
+                                    <Text style={styles.eventLabel}>{selectedEvent.name} • Granular Schedule</Text>
                                 
                                 {selectedEvent.itinerary && selectedEvent.itinerary.length > 0 ? (
                                     selectedEvent.itinerary.map((it: any, i: number) => (
@@ -430,6 +467,7 @@ export default function EventsScreen() {
                         )}
                     </View>
                 </View>
+                </KeyboardAvoidingView>
             </Modal>
         </SafeAreaView >
     );
@@ -440,6 +478,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: "row",
         alignItems: "center",
+        justifyContent: "space-between",
         padding: 16,
         backgroundColor: "#FFF",
         borderBottomWidth: 1,

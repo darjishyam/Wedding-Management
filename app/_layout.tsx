@@ -8,6 +8,18 @@ import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Provider } from 'react-redux';
 import { store } from '../store/store';
+import * as Notifications from 'expo-notifications';
+
+// Handle notifications when the app is in the foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true, // legacy fallback
+    shouldShowBanner: true, // Modern Expo property
+    shouldShowList: true,   // Modern Expo property
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function RootLayout() {
   const [loaded, setLoaded] = useState(true);

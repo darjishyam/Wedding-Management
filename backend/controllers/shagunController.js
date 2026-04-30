@@ -1,5 +1,7 @@
 const Shagun = require('../models/Shagun');
 const Wedding = require('../models/Wedding');
+const User = require('../models/User');
+const { sendNotification, notifyWeddingStakeholders } = require('../utils/notification');
 
 // @desc    Get all shagun entries for a wedding
 // @route   GET /api/shagun
@@ -69,6 +71,22 @@ const addShagun = async (req, res) => {
 
         const createdShagun = await shagun.save();
         res.status(201).json(createdShagun);
+
+        // Send Push Notification to other stakeholders
+        try {
+            const sender = await User.findById(req.user._id);
+            const senderName = sender ? sender.name : 'Someone';
+
+            await notifyWeddingStakeholders(
+                weddingId,
+                req.user._id,
+                '💰 New Shagun Entry!',
+                `${senderName} added ₹${numericAmount} from ${name}.`,
+                { shagunId: createdShagun._id.toString(), type: 'shagun' }
+            );
+        } catch (notifErr) {
+            console.error('Shagun Notification Error:', notifErr.message);
+        }
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

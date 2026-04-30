@@ -1,5 +1,7 @@
 const Event = require('../models/Event');
 const Wedding = require('../models/Wedding');
+const User = require('../models/User');
+const { sendNotification, notifyWeddingStakeholders } = require('../utils/notification');
 
 // @desc    Create a new event
 // @route   POST /api/events
@@ -34,6 +36,22 @@ exports.createEvent = async (req, res) => {
         await wedding.save();
 
         res.status(201).json(savedEvent);
+
+        // Notify other stakeholders
+        try {
+            const sender = await User.findById(req.user._id);
+            const senderName = sender ? sender.name : 'Someone';
+
+            await notifyWeddingStakeholders(
+                weddingId,
+                req.user._id,
+                '📅 New Event Added!',
+                `${senderName} added a new event: ${name}`,
+                { eventId: savedEvent._id.toString(), type: 'event' }
+            );
+        } catch (notifErr) {
+            console.error('Event Notification Error:', notifErr.message);
+        }
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

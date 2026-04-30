@@ -4,10 +4,20 @@ const User = require('../models/User');
 const Payment = require('../models/Payment');
 const Vendor = require('../models/Vendor');
 
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET
-});
+// Lazy initialization — only create Razorpay instance when needed
+let razorpayInstance = null;
+const getRazorpay = () => {
+    if (!razorpayInstance) {
+        if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+            throw new Error('Razorpay keys not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in environment variables.');
+        }
+        razorpayInstance = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET
+        });
+    }
+    return razorpayInstance;
+};
 
 const createOrder = async (req, res) => {
     try {
@@ -22,7 +32,7 @@ const createOrder = async (req, res) => {
         };
 
         console.log("[Razorpay] Creating Order:", options);
-        const order = await razorpay.orders.create(options);
+        const order = await getRazorpay().orders.create(options);
         res.json(order);
     } catch (error) {
         console.error("Razorpay Order Creation Error:", error);

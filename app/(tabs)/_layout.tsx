@@ -1,9 +1,29 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { Platform, Image as RNImage } from "react-native";
+import { useEffect } from "react";
+import FirebaseService from "@/services/FirebaseService";
 
 
 export default function TabLayout() {
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    // 1. Setup foreground notification handler (heads-up alerts)
+    const unsubscribe = FirebaseService.setupForegroundHandler();
+
+    // 2. Handle app opened from quit state
+    FirebaseService.handleInitialNotification();
+
+    // 3. Register for notifications if a session exists
+    // (This acts as a backup in case registration fails during login)
+    FirebaseService.registerForPushNotifications();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
   return (
     <Tabs
       screenOptions={{

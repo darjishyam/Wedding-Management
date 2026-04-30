@@ -1,70 +1,41 @@
 {
   "project_info": {
-    "project_number": "571332592140",
-    "project_id": "weddingapp-d55a7",
-    "storage_bucket": "weddingapp-d55a7.firebasestorage.app"
+    "project_number": "151810812854",
+    "project_id": "wedding-management-syste-17c85",
+    "storage_bucket": "wedding-management-syste-17c85.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:571332592140:android:7e3b6a6336e4faf1d7e429",
+        "mobilesdk_app_id": "1:151810812854:android:089c70359d940d8a0eaf17",
         "android_client_info": {
-          "package_name": "com.hellowoeld.app"
+          "package_name": "com.shagun.app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "571332592140-gbibcqolk9m3sfbqplc1abqf4mkbkinc.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCFgcmJvqL5XFDZvBWeg0o1sv26GIm_mSo"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "571332592140-gbibcqolk9m3sfbqplc1abqf4mkbkinc.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:571332592140:android:a75c6dd1f5eacab8d7e429",
-        "android_client_info": {
-          "package_name": "com.helloworld.app"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "571332592140-u2rqtep4usol0ou2goccpjj2187qumtp.apps.googleusercontent.com",
+          "client_id": "151810812854-20fsjj19kdsmpqemo0lf98itr9voj9ca.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.helloworld.app",
-            "certificate_hash": "0337fb4b316af5a884cf3dd17de2cdc0826b8944"
+            "package_name": "com.shagun.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
           }
         },
         {
-          "client_id": "571332592140-gbibcqolk9m3sfbqplc1abqf4mkbkinc.apps.googleusercontent.com",
+          "client_id": "151810812854-qpbns1drhddnjuh5tgpej00ufa3200ep.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCFgcmJvqL5XFDZvBWeg0o1sv26GIm_mSo"
+          "current_key": "AIzaSyD9lmg96sBkaQBTXyhernvottk2beMzmLQ"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "571332592140-gbibcqolk9m3sfbqplc1abqf4mkbkinc.apps.googleusercontent.com",
+              "client_id": "151810812854-qpbns1drhddnjuh5tgpej00ufa3200ep.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

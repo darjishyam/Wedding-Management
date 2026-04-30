@@ -51,11 +51,7 @@ export default function VendorsScreen() {
                 </TouchableOpacity>
                 <Text style={styles.navTitle}>Vendors</Text>
                 <View style={{ flexDirection: 'row' }}>
-                    <TouchableOpacity style={styles.addButtonSmall} onPress={async () => {
-                        const { useAuth } = require('@/contexts/AuthContext');
-                        // We can't use hook inside callback efficiently without refactor, 
-                        // but context is avail in component. Let's fix above.
-                    }}>
+                    <TouchableOpacity style={styles.addButtonSmall} onPress={handleExport}>
                         <Ionicons name="document-text-outline" size={24} color="#000" />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.addButtonSmall} onPress={() => router.push('/vendors/add-vendor')}>

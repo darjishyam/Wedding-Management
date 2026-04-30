@@ -124,9 +124,10 @@ export const PDFService = {
     const rows = guests.map(g => `
       <tr>
         <td>${g.name}</td>
-        <td>${g.mobile || '-'}</td>
-        <td>${g.familyMembers}</td>
-        <td>${g.city || '-'}</td>
+        <td>${g.familyCount || 1}</td>
+        <td>${g.cityVillage || '-'}</td>
+        <td>${g.category || '-'}</td>
+        <td>${g.status || '-'}</td>
       </tr>
     `).join('');
 
@@ -150,9 +151,10 @@ export const PDFService = {
           <table>
             <tr>
               <th>Name</th>
-              <th>Mobile</th>
-              <th>Members</th>
-              <th>City</th>
+              <th>Family Count</th>
+              <th>City/Village</th>
+              <th>Category</th>
+              <th>Status</th>
             </tr>
             ${rows}
           </table>
@@ -211,7 +213,7 @@ export const PDFService = {
   generateEventPDFHTML(event: any, guests: any[]) {
     const guestRows = guests.map(g => {
       // Find status for this event
-      const assignment = g.assignedEvents.find((ae: any) =>
+      const assignment = g.assignedEvents?.find((ae: any) =>
         (typeof ae === 'string' ? ae === event._id : ae.event === event._id)
       );
       const status = typeof assignment === 'object' ? assignment.status : 'Invited';
@@ -219,9 +221,9 @@ export const PDFService = {
       return `
             <tr>
               <td>${g.name}</td>
-              <td>${g.familyCount}</td>
-              <td>${g.cityVillage}</td>
-              <td>${g.mobile || '-'}</td>
+              <td>${g.familyCount || 1}</td>
+              <td>${g.cityVillage || '-'}</td>
+              <td>${g.category || '-'}</td>
               <td>${status}</td>
             </tr>
           `;
@@ -257,8 +259,8 @@ export const PDFService = {
               <tr>
                 <th>Guest Name</th>
                 <th>Family Count</th>
-                <th>City</th>
-                <th>Mobile</th>
+                <th>City/Village</th>
+                <th>Category</th>
                 <th>Status</th>
               </tr>
               ${guestRows}
@@ -273,6 +275,77 @@ export const PDFService = {
       <html>
         <body style="margin:0; padding:0; display:flex; justify-content:center; align-items:center; background-color: #f0f0f0;">
           <img src="${imageUri}" style="width:100%; max-width:800px; height:auto;" />
+        </body>
+      </html>
+    `;
+  },
+
+  generateAllEventsPDFHTML(events: any[], allGuests: any[]) {
+    const eventRows = events.map(event => {
+      const eventGuests = allGuests.filter(g =>
+        g.assignedEvents?.some((ae: any) => {
+          const eventId = typeof ae === 'string' ? ae : ae.event;
+          return eventId === event._id;
+        })
+      );
+      const totalHeads = eventGuests.reduce((sum, g) => sum + (g.familyCount || 1), 0);
+
+      return `
+        <tr>
+          <td>${event.name}</td>
+          <td>${new Date(event.date).toDateString()}</td>
+          <td>${event.time || 'N/A'}</td>
+          <td>${event.venue || 'N/A'}</td>
+          <td>${event.description || '-'}</td>
+          <td>${eventGuests.length}</td>
+          <td>${totalHeads}</td>
+        </tr>
+      `;
+    }).join('');
+
+    return `
+      <html>
+        <head>
+          <style>
+            body { font-family: 'Helvetica', sans-serif; padding: 20px; }
+            h1 { text-align: center; color: #8A0030; }
+            .subtitle { text-align: center; color: #666; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 11px; word-wrap: break-word; }
+            th { background-color: #8A0030; color: #FFF; }
+            tr { page-break-inside: avoid; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .summary { margin: 20px 0; font-weight: bold; padding: 15px; background: #FFF0F5; border-radius: 8px; }
+            .footer { margin-top: 30px; text-align: center; color: #999; font-size: 10px; }
+          </style>
+        </head>
+        <body>
+          <h1>Wedding Events Schedule</h1>
+          <p class="subtitle">Generated on ${new Date().toDateString()}</p>
+
+          <div class="summary">
+            <p>Total Events: ${events.length}</p>
+            <p>Total Guests: ${allGuests.length}</p>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Event Name</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Venue</th>
+                <th>Description</th>
+                <th>Guests Invited</th>
+                <th>Total Heads</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${eventRows}
+            </tbody>
+          </table>
+
+          <p class="footer">Wedding Management App &bull; All Events Report</p>
         </body>
       </html>
     `;

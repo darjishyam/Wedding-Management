@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOnboarding } from "@/contexts/OnboardingContext";
+import { useToast } from "@/contexts/ToastContext";
 import { useWedding } from "@/contexts/WeddingContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -11,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout, reloadUser } = useAuth();
+  const { showToast } = useToast();
   const { resetOnboarding } = useOnboarding();
   const { language, setLanguage, t } = useLanguage();
   const { weddingData, updateWedding, addCollaborator, removeCollaborator } = useWedding();
@@ -65,6 +67,17 @@ export default function ProfileScreen() {
         }
       ]
     );
+  };
+
+  const handleSendTestNotification = async () => {
+    try {
+        const api = require('@/services/api').default;
+        await api.post('/auth/test-notification');
+        showToast("Test notification sent!", "success");
+    } catch (error: any) {
+        const msg = error.response?.data?.message || "Failed to send test notification";
+        Alert.alert("Error", msg);
+    }
   };
 
   return (
@@ -245,6 +258,23 @@ export default function ProfileScreen() {
                 <Ionicons name="logo-instagram" size={20} color="#000" />
               </View>
               <Text style={styles.menuItemText}>{t("connect_instagram")}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+          </TouchableOpacity>
+
+          {/* Test Notification (Developer/Test Only) */}
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={handleSendTestNotification}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: "#8A0030" }]}>
+                <Ionicons name="notifications-outline" size={20} color="#FFF" />
+              </View>
+              <View style={styles.menuItemTextContainer}>
+                <Text style={styles.menuItemText}>Test Push Notification</Text>
+                <Text style={styles.menuItemSubtext}>Send a test alert to this device</Text>
+              </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
           </TouchableOpacity>

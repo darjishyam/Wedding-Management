@@ -5,6 +5,7 @@ const Package = require('../models/Package');
 const Vendor = require('../models/Vendor');
 const Shagun = require('../models/Shagun');
 const User = require('../models/User');
+const { sendNotification } = require('../utils/notification');
 
 // @desc    Create a new wedding
 // @route   POST /api/weddings
@@ -249,6 +250,21 @@ const addCollaborator = async (req, res) => {
 
         const updatedWedding = await Wedding.findById(wedding._id).populate('collaborators', 'name email profileImage');
         res.json(updatedWedding);
+
+        // Send Notification to the newly added collaborator
+        try {
+            if (userToAdd.fcmToken) {
+                await sendNotification(
+                    userToAdd.fcmToken,
+                    '🤝 New Wedding Collaboration!',
+                    `You've been added to ${wedding.groomName} & ${wedding.brideName}'s wedding team.`,
+                    { weddingId: wedding._id.toString() }
+                );
+            }
+        } catch (notifErr) {
+            console.error('Collaborator Notification Error:', notifErr.message);
+        }
+
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

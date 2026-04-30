@@ -3,6 +3,8 @@ const Wedding = require('../models/Wedding');
 const Expense = require('../models/Expense');
 const Event = require('../models/Event');
 const Vendor = require('../models/Vendor');
+const Guest = require('../models/Guest');
+const Shagun = require('../models/Shagun');
 const axios = require('axios');
 
 // Initialize Gemini
@@ -200,6 +202,19 @@ const chatWithAI = async (req, res) => {
                 ? vendors.map(v => `- ${v.name} (${v.category}): Total ₹${v.totalAmount}, Paid ₹${v.paidAmount}, Status: ${v.status}`).join('\n')
                 : "No vendors added yet.";
 
+            // Fetch Guests
+            const guestList = await Guest.find({ wedding: weddingId });
+            const guestStats = {
+                total: guestList.reduce((sum, g) => sum + (g.familyCount || 1), 0),
+                invited: guestList.filter(g => g.status === 'Invited').length,
+                pending: guestList.filter(g => g.status === 'Pending').length,
+                confirmed: guestList.filter(g => g.status === 'Confirmed').length,
+            };
+
+            // Fetch Shagun
+            const shagunList = await Shagun.find({ wedding: weddingId });
+            const totalShagun = shagunList.reduce((sum, s) => sum + (s.amount || 0), 0);
+
             context = `
             Context: Indian Wedding Planning.
             Wedding Details:
@@ -214,6 +229,16 @@ const chatWithAI = async (req, res) => {
 
             Vendor Payment Status:
             ${vendorContext}
+
+            Guest Statistics:
+            - Total Headcount: ${guestStats.total}
+            - Invited: ${guestStats.invited}
+            - Pending RSVPs: ${guestStats.pending}
+            - Confirmed: ${guestStats.confirmed}
+
+            Shagun (Chandlo) Collection:
+            - Total Amount Collected: ₹${totalShagun}
+            - Number of Entries: ${shagunList.length}
             `;
         }
 

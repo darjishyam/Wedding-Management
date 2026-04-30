@@ -1,5 +1,7 @@
 const Expense = require('../models/Expense');
 const Wedding = require('../models/Wedding');
+const User = require('../models/User');
+const { notifyWeddingStakeholders } = require('../utils/notification');
 
 // @desc    Add an expense
 // @route   POST /api/expenses
@@ -29,6 +31,22 @@ const addExpense = async (req, res) => {
         });
 
         res.status(201).json(expense);
+
+        // Notify other stakeholders
+        try {
+            const sender = await User.findById(req.user._id);
+            const senderName = sender ? sender.name : 'Someone';
+
+            await notifyWeddingStakeholders(
+                wedding._id,
+                req.user._id,
+                '💸 New Expense Added!',
+                `${senderName} added a ₹${amount} expense for ${title}`,
+                { expenseId: expense._id.toString(), type: 'expense' }
+            );
+        } catch (notifErr) {
+            console.error('Expense Notification Error:', notifErr.message);
+        }
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
